@@ -7,8 +7,9 @@
     "dev:serve": "nodemon --delay 2000ms dist/index.cjs.js",
     "build": "yarn prisma:prod:schema && yarn mjmlBuild && rollup --bundleConfigAsCjs --config rollup.config.js",
     "serve": "node dist/index.cjs.js",
-    "mjmlBuild": "mjml mail/verify.mjml --config.minify -o mail/verify.mail",
-    "prisma:prod": "prisma migrate deploy && yarn serve",
+    "mjml:build": "mjml ./mail/*.mjml -o ./mail/dist/ --config.minify=true",
+		"mjml:lint": "mjml ./mail/*.mjml --config.validationLevel=strict",
+		"prisma:prod": "prisma migrate deploy && yarn serve",
     "prisma:prod:schema": "prisma generate --schema ./prisma/schema.prod.prisma",
     "prisma:dev": "prisma db push",
     "prisma:dev:schema": "prisma generate --schema ./prisma/schema.prisma"

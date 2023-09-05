@@ -7,10 +7,10 @@
 		<mj-include path="./includes/header.mjml" />
 		<mj-section>
 			<mj-column>
-				<mj-text align="center" font-size="25px">Validate your account</mj-text>
-				<mj-text align="center">Write the following code in the input prompt to perform the validation</mj-text>
-				<mj-text align="center" font-size="15px" font-weight="bold">If you did not make this request, simply ignore this message</mj-text>
-				<mj-text align="center" font-style="oblique">This code is valid for only 15 minutes</mj-text>
+				<mj-text align="center" font-size="25px">Confirm your identity</mj-text>
+				<mj-text align="center">Write the following code in the input prompt to confirm the identity</mj-text>
+				<mj-text align="center" font-size="15px" font-weight="bold">If you did not make this request, change your account password immediately</mj-text>
+				<mj-text align="center" font-style="oblique">This code is valid for only 5 minutes</mj-text>
 			</mj-column>
 		</mj-section>
 		<mj-section>

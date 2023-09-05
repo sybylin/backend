@@ -9,10 +9,11 @@
 **/lerna-debug.log*
 
 **/node_modules
-**/dist
-**/dist-ssr
+/dist
+dist-ssr
 **/temp
 *.local
+.rollup.cache
 
 # Editor directories and files
 .idea
