@@ -1,0 +1,30 @@
+{
+	"compilerOptions": {
+		"baseUrl": ".",
+		"composite": true,
+		"declaration": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"isolatedModules": true,
+		"lib": ["ESNext", "DOM"],
+		"allowJs": true,
+		"moduleResolution": "Node",
+		"outDir": "dist",
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"sourceMap": false,
+		"target": "ESNext",
+		"types": ["node", "express"],
+
+		"paths": {
+			"@/*": ["src/*"],
+			"code/*": ["src/code/*"],
+			"lib/*": ["src/lib/*"],
+			"routes/*": ["src/routes/*"],
+			"database/*": ["src/database/*"]
+		}
+	},
+	"exclude": ["node_modules/*"],
+	"include": ["src/**/*", "src/**/*.d.ts", "prisma/prisma.ts"]
+}

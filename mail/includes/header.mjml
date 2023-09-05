@@ -1,0 +1,7 @@
+<mj-section>
+	<mj-column vertical-align="middle">
+		<mj-image src="https://placehold.co/100x100" width="150px" alt="Mapcraft icon"></mj-image>
+		<mj-text align="center" font-size="50px" padding-top="0px">Sibylline</mj-text>
+		<mj-divider border-width="1px" border-style="solid" border-color="lightgrey" />
+	</mj-column>
+</mj-section>

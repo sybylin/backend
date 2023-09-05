@@ -1,0 +1,9 @@
+* {
+	font-family: 'Segoe UI',Tahoma,Geneva,Verdana,sans-serif !important;
+}
+
+.code div {
+	color: #e98411 !important;
+	font-family: 'Lucida Sans','Lucida Sans Regular','Lucida Grande','Lucida Sans Unicode',Geneva,Verdana,sans-serif !important;
+	padding: .5em;
+}

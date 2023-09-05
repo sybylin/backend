@@ -1,0 +1,7 @@
+<mj-section>
+	<mj-column>
+		<mj-divider border-width="1px" border-style="solid" border-color="lightgrey" />
+		<mj-text align="center">Sibylline, copyright 2023 - {{ date }}</mj-text>
+		<mj-text align="center" font-size="10px">Sibylline will never ask you for your password or any personal information. Do not give them to anyone, under any circumstances</mj-text>
+		</mj-column>
+</mj-section>

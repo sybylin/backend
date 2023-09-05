@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider	= "postgresql"
+  url				= env("DATABASE_URL")
+}
+
+// #region Enum
+enum Role {
+	USER
+	MODERATOR
+	ADMINISTRATOR
+}
+
+enum Solution {
+	STRING
+	ARRAY
+	OBJECT
+}
+// #endregion Enum
+
+// #region Main tables
+model Achievement {
+	id									Int									@id @default(autoincrement())
+	name								String							@unique @db.VarChar(255)
+	description					String
+	image								String?
+	point								Int									@default(10)
+	creation_date				DateTime?						@default(now())
+	modification_date		DateTime?						@updatedAt
+	//// relations
+	user_achievement			UserAchievement[]
+	
+	achievement_creator		AchievementCreator[]
+}
+
+model Enigma {
+	id									Int									@id @default(autoincrement())
+	series_id						Int
+	title								String							@db.VarChar(255)
+	image								String?
+	description					String
+	point								Int									@default(0)
+	creation_date				DateTime?						@default(now())
+	modification_date		DateTime?						@updatedAt
+	//// relations
+	series_enigma_order	SeriesEnigmaOrder[]
+
+	enigma_solution			EnigmaSolution?
+	enigma_finished			EnigmaFinished[]
+	enigma_creator			EnigmaCreator[]
+}
+
+model Series {
+	id									Int									@id @default(autoincrement())
+	title								String							@unique
+	image								String?
+	description					String
+	point								Int									@default(0)
+	creation_date				DateTime?						@default(now())
+	modification_date		DateTime?						@updatedAt
+	//// relations
+	series_finished			SeriesFinished[]
+	series_enigma_order	SeriesEnigmaOrder[]
+	series_creator			SeriesCreator[]
+}
+
+model User {
+	id									Int									@id @default(autoincrement())
+	name								String							@unique @db.VarChar(255)
+	email								String							@unique @db.VarChar(255)
+	password						String
+	avatar							String?
+	role								Role								@default(USER)
+	verify							Boolean?						@default(false)
+	token								Int?								@default(0)
+	token_deadline			DateTime?						@default(now())
+	creation_date				DateTime?						@default(now())
+	modification_date		DateTime?						@updatedAt
+	//// relations
+	series_finished			SeriesFinished[]
+	series_creator			SeriesCreator[]
+
+	enigma_finished			EnigmaFinished[]
+	enigma_creator			EnigmaCreator[]
+
+	user_achievement			UserAchievement[]
+
+	achievement_creator		AchievementCreator[]
+}
+// #endregion Main tables
+
+// #region Achievement
+model AchievementCreator {
+	achievement_id			Int									@unique
+	user_id							Int
+	@@unique([achievement_id, user_id])
+	//// relations
+	achievement					Achievement					@relation(fields: [achievement_id], references: [id])
+	user								User								@relation(fields: [user_id], references: [id])
+}
+// #endregion Achievement
+
+// #region Enigma
+model EnigmaCreator {
+	enigma_id						Int
+	user_id							Int
+	@@unique([enigma_id, user_id])
+	//// relations
+	enigma							Enigma							@relation(fields: [enigma_id], references: [id])
+	user								User								@relation(fields: [user_id], references: [id])
+}
+
+model EnigmaFinished {
+	enigma_id						Int
+	user_id							Int
+	completion_date			DateTime?						@default(now())
+	@@unique([enigma_id, user_id])
+	//// relations
+	enigma							Enigma							@relation(fields: [enigma_id], references: [id])
+	user								User								@relation(fields: [user_id], references: [id])
+}
+
+model EnigmaSolution {
+	enigma_id						Int									@unique
+	type								Solution						@default(STRING)
+	solution						String
+	//// relations
+	enigma							Enigma							@relation(fields: [enigma_id], references: [id])
+}
+// #endregion Enigma
+
+// #region Series
+model SeriesCreator {
+	series_id						Int
+	user_id							Int
+	@@unique([series_id, user_id])
+	//// relations
+	series							Series							@relation(fields: [series_id], references: [id])
+	user								User								@relation(fields: [user_id], references: [id])
+}
+
+model SeriesEnigmaOrder {
+	series_id						Int
+	enigma_id						Int
+	order								Int
+	@@unique([series_id, enigma_id])
+	//// relations
+	series							Series							@relation(fields: [series_id], references: [id])
+	enigma							Enigma							@relation(fields: [enigma_id], references: [id])
+}
+
+model SeriesFinished {
+	series_id						Int
+	user_id							Int
+	completion_date			DateTime?						@default(now())
+	@@unique([series_id, user_id])
+	//// relations
+	series							Series							@relation(fields: [series_id], references: [id])
+	user								User								@relation(fields: [user_id], references: [id])
+}
+// #endregion Series
+
+// #region User
+model UserAchievement {
+	user_id							Int
+	achievement_id			Int
+	unlocking_date			DateTime?						@default(now())
+	@@unique([user_id, achievement_id])
+	//// relations
+	user								User								@relation(fields: [user_id], references: [id])
+	achievement					Achievement					@relation(fields: [achievement_id], references: [id])
+}
+// #endregion User
