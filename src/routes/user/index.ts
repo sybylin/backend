@@ -8,7 +8,7 @@ import normalizeEmail from 'validator/lib/normalizeEmail';
 import { getInfo } from 'code/index';
 import { error, success } from 'code/format';
 import { JWT_COOKIE_NAME, generateJwtToken, jwtMiddleware } from 'lib/jwt';
-import mail from 'lib/mail';
+import Mail from 'lib/mail';
 import UserController from 'database/user/controller';
 
 import type { NextFunction, Request, Response } from 'express';
@@ -28,13 +28,11 @@ const generateToken = (): { token: number; deadline: Date } => {
 		deadline: date
 	};
 };
-
+/*
 const sendVerificationMail = (email: string, token: string): Promise<boolean | Error> => {
-	return mail.sendVerify(email, 'verify.mail', {
-		token
-	});
+	return mail.accountVerification(email, { token });
 };
-
+*/
 const VerifUserPass = (req: Request<any>, res: Response<any>, checkPass = true) => {
 	if (!Object.keys(req.body).length)
 		return error(req, res, 'RE_001');
@@ -128,7 +126,7 @@ class account {
 					d.token_deadline = token.deadline;
 					UserController.update(d)
 						.then(() => {
-							sendVerificationMail(d.email, String(d.token))
+							Mail.accountVerification(d.email, { token: String(d.token) })
 								.then(() => success(req, res, 'US_102', {
 									data: {
 										mailSend: true
@@ -194,7 +192,8 @@ class account {
 			.then((account) => {
 				if (!account)
 					return next(new Error(getInfo('GE_003').message));
-				sendVerificationMail(mail, token.token.toString())
+				
+				Mail.accountVerification(mail, { token: token.token.toString() })
 					.then(async () => {
 						return success(req, res, 'US_104', {
 							data: {
@@ -253,7 +252,7 @@ class account {
 						modification_date: null
 					}, !!(req.body.password))
 						.then(() => {
-							sendVerificationMail(mail, String(token.token))
+							Mail.accountVerification(mail, { token: String(token.token) })
 								.then(() => success(req, res, 'US_102', {
 									data: {
 										mailSend: true

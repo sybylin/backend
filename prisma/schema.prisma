@@ -72,9 +72,10 @@ model User {
 	enigma_finished			EnigmaFinished[]
 	enigma_creator			EnigmaCreator[]
 
-	user_achievement			UserAchievement[]
+	user_achievement		UserAchievement[]
+	user_invalid_token	UserInvalidToken[]
 
-	achievement_creator		AchievementCreator[]
+	achievement_creator	AchievementCreator[]
 }
 // #endregion Main tables
 
@@ -158,5 +159,14 @@ model UserAchievement {
 	//// relations
 	user								User								@relation(fields: [user_id], references: [id])
 	achievement					Achievement					@relation(fields: [achievement_id], references: [id])
+}
+
+model UserInvalidToken {
+	id									Int									@id @default(autoincrement())
+	user_id							Int									@unique
+	token								String
+	deadline						DateTime
+	//// relations
+	user								User								@relation(fields: [user_id], references: [id])
 }
 // #endregion User
