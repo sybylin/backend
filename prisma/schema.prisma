@@ -163,7 +163,7 @@ model UserAchievement {
 
 model UserInvalidToken {
 	id									Int									@id @default(autoincrement())
-	user_id							Int									@unique
+	user_id							Int
 	token								String
 	deadline						DateTime
 	//// relations

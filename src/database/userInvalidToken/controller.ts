@@ -7,30 +7,29 @@ export default class controller {
 			return null;
 		return userInvalidToken.create({
 			data: {
-				...
+				user_id: data.user_id,
+				token: data.token,
+				deadline: data.deadline
 			}
 		});
 	}
-		
-	static async findOne(idOrName: number | string): Promise<UserInvalidToken | null> {
-		if (typeof(idOrName) === 'number') {
-			return userInvalidToken.findUnique({
-				where: {
-					id: idOrName
-				}
-			});
-		}
-		return userInvalidToken.findUnique({
+
+	static async read(userId: number, joinUser = false): Promise<UserInvalidToken | UserInvalidToken[]> {
+		return userInvalidToken.findMany({
 			where: {
-				name: idOrName
-			}
+				id: userId
+			},
+			include: {
+				user: joinUser
+			},
+			orderBy: [
+				{
+					deadline: 'desc'
+				}
+			]
 		});
 	}
-	
-	static async findAll(): Promise<UserInvalidToken[] | null> {
-		return userInvalidToken.findMany();
-	}
-	
+
 	static async update(data: UserInvalidToken): Promise<UserInvalidToken | null> {
 		if (!data)
 			return null;
@@ -39,23 +38,40 @@ export default class controller {
 				id: data.id
 			},
 			data: {
-				...
+				user_id: data.user_id,
+				token: data.token,
+				deadline: data.deadline
 			}
 		});
 	}
-	
-	static async delete(idOrName: number | string): Promise<UserInvalidToken> {
-		if (typeof(idOrName) === 'number') {
-			return userInvalidToken.delete({
-				where: {
-					id: idOrName
-				}
-			});
-		}
+
+	static async delete(id: number): Promise<UserInvalidToken> {
 		return userInvalidToken.delete({
 			where: {
-				name: idOrName
+				id
 			}
 		});
+	}
+
+	static async isValid(userId: number, token: string): Promise<boolean> {
+		const tokens = await userInvalidToken.findMany({
+			where: {
+				user_id: userId,
+				token
+			},
+			select: {
+				deadline: true
+			},
+			orderBy: [
+				{
+					deadline: 'desc'
+				}
+			]
+		});
+
+		return (
+			!tokens ||
+			tokens[0].deadline.getTime() < new Date().getTime()
+		);
 	}
 }
