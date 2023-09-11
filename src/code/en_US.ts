@@ -29,6 +29,7 @@ const list: {
 		US_009: 'Token is expired, please repeat the process',
 		US_010: 'Token is invalid',
 		US_011: 'Token deadline not exist',
+		US_020: 'Password reset initialization failed',
 
 		US_101: 'User has been successfully authenticated',
 		US_102: 'Verification is awaiting a response',
@@ -38,6 +39,7 @@ const list: {
 		US_106: 'Account is deleted',
 		US_107: 'User exist',
 		US_108: 'User is recognized',
+		US_120: 'Password reset initialization started'
 	},
 	enigma: {
 		EN_001: 'Incorrect id',

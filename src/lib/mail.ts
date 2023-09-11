@@ -23,12 +23,8 @@ export class Mail {
 		this.passwordMail = '';
 		this.verifyMail = '';
 		this.nodeMailer = nodemailer.createTransport(
-			(process.env.DEV)
+			(process.env.NODE_ENV === 'production')
 				? {
-					host: 'localhost',
-					port: 7895
-				}
-				: {
 					host: process.env.BACKEND_MAIL_HOST,
 					port: 465,
 					secure: true,
@@ -36,6 +32,10 @@ export class Mail {
 						user: process.env.BACKEND_MAIL_USER,
 						pass: process.env.BACKEND_MAIL_PASS
 					}
+				}
+				: {
+					host: 'localhost',
+					port: 7895
 				}
 		);
 		this.defaultMail = defaultMail ?? 'Sibyllin <hello@sibyllin.app';
@@ -50,6 +50,7 @@ export class Mail {
 
 	private formatString(str: string, args: Record<string, unknown>): string {
 		const matchs = str.matchAll(/(?<main>{{[ \t]*(?<key>[\S]+)[ \t]*}})/gi);
+		const currentYear = new Date().getFullYear(), originYear = 2023;
 		let x = 0, ret = '';
 
 		for (const match of matchs) {
@@ -57,7 +58,9 @@ export class Mail {
 				continue;
 			const val = (match.groups.key !== 'date')
 				? args[match.groups.key]
-				: new Date().getFullYear();
+				: (currentYear > originYear)
+					? `${originYear} - ${currentYear}`
+					: `${originYear}`;
 			ret += str.substring(x, match.index);
 			ret += val ?? match.groups.main;
 			x = match.index + match.groups.main.length;

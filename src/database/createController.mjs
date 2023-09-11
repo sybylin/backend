@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url';
 	const name = argv[2].charAt(0).toLowerCase() + argv[2].slice(1);
 	const data = `import { ${name} } from 'database/db.instance';
 import { ${up(name)} } from '@prisma/client';
-	
+
 export default class controller {
 	static async create(data: ${up(name)}): Promise<${up(name)} | null | never> {
 		if (!data)
@@ -23,26 +23,19 @@ export default class controller {
 			}
 		});
 	}
-		
-	static async findOne(idOrName: number | string): Promise<${up(name)} | null> {
-		if (typeof(idOrName) === 'number') {
-			return ${name}.findUnique({
-				where: {
-					id: idOrName
-				}
-			});
-		}
-		return ${name}.findUnique({
+
+	static async read(id: number): Promise<${up(name)} | ${up(name)}[] | null> {
+		return ${name}.findMany({
 			where: {
-				name: idOrName
+				id
 			}
 		});
 	}
-	
+
 	static async findAll(): Promise<${up(name)}[] | null> {
 		return ${name}.findMany();
 	}
-	
+
 	static async update(data: ${up(name)}): Promise<${up(name)} | null> {
 		if (!data)
 			return null;
@@ -55,7 +48,7 @@ export default class controller {
 			}
 		});
 	}
-	
+
 	static async delete(idOrName: number | string): Promise<${up(name)}> {
 		if (typeof(idOrName) === 'number') {
 			return ${name}.delete({

@@ -26,6 +26,7 @@ export const {
 	achievement, achievementCreator,
 	enigma, enigmaCreator, enigmaFinished, enigmaSolution,
 	series, seriesCreator, seriesEnigmaOrder, seriesFinished,
-	user, userAchievement, userInvalidToken
+	user, userAchievement, userResetPassword,
+	token
 } = prisma;
 export default prisma;

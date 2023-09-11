@@ -10,6 +10,7 @@ import { error, success } from 'code/format';
 import { JWT_COOKIE_NAME, generateJwtToken, jwtMiddleware } from 'lib/jwt';
 import Mail from 'lib/mail';
 import UserController from 'database/user/controller';
+import resetToken from './resetToken';
 
 import type { NextFunction, Request, Response } from 'express';
 
@@ -28,11 +29,7 @@ const generateToken = (): { token: number; deadline: Date } => {
 		deadline: date
 	};
 };
-/*
-const sendVerificationMail = (email: string, token: string): Promise<boolean | Error> => {
-	return mail.accountVerification(email, { token });
-};
-*/
+
 const VerifUserPass = (req: Request<any>, res: Response<any>, checkPass = true) => {
 	if (!Object.keys(req.body).length)
 		return error(req, res, 'RE_001');
@@ -289,14 +286,15 @@ class account {
 }
 
 export default Router()
-	// .get('/:name', jwtMiddleware, account.get)
 	.get('/check', jwtMiddleware, account.rememberMe)
 	.get('/logout', jwtMiddleware, account.logout)
+	.get('/reset', resetToken)
+	.get('/:name', jwtMiddleware, account.get)
+
+	.post('/create', account.create)
+	.post('/check', account.check)
+	.post('/token', account.token)
 
 	.put('/', jwtMiddleware, account.update)
 	
-	.delete('/', jwtMiddleware, account.delete)
-	
-	.post('/create', account.create)
-	.post('/check', account.check)
-	.post('/token', account.token);
+	.delete('/', jwtMiddleware, account.delete);

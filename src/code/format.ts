@@ -10,6 +10,18 @@ interface formatOptions {
 	status?: number; // response HTTP code
 }
 
+function getLang(req: Request<any>, options: formatOptions | undefined) {
+	const parse = (str: string) => String(str).toLowerCase().replaceAll(/[_/\\]/g, '-');
+
+	if (options && options.lang)
+		return options.lang?.toLowerCase();
+	if (req.body && req.body.lang)
+		return parse(req.body.lang);
+	if (req.params && req.params.lang)
+		return parse(req.params.lang);
+	return undefined;
+}
+
 function resFormat(
 	isError: boolean,
 	defaultCode: number,
@@ -20,7 +32,7 @@ function resFormat(
 	jwt?: token
 ) {
 	const statusCode = options?.status ?? defaultCode;
-	const info = getInfo(code, options?.lang?.toLowerCase() ?? String(req.body.lang).toLowerCase().replaceAll(/[_/\\]/g, '-'));
+	const info = getInfo(code, getLang(req, options));
 	const retObj: Record<string, unknown> = {
 		statusCode,
 		info,

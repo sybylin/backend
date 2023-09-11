@@ -1,6 +1,7 @@
 import rateLimit from 'express-rate-limit';
 import { log } from 'lib/log';
 import 'database/db.instance';
+import 'database/db.cron';
 import info from 'routes/defaultResponse';
 import main from 'routes/main';
 import achievement from 'routes/achievement';

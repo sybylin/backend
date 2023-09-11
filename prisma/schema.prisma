@@ -73,9 +73,16 @@ model User {
 	enigma_creator			EnigmaCreator[]
 
 	user_achievement		UserAchievement[]
-	user_invalid_token	UserInvalidToken[]
+	user_reset_password	UserResetPassword[]
 
 	achievement_creator	AchievementCreator[]
+}
+
+model Token {
+	id									Int									@id @default(autoincrement())
+	token								String
+	is_invalid					Boolean							@default(false)
+	deadline						DateTime
 }
 // #endregion Main tables
 
@@ -161,11 +168,11 @@ model UserAchievement {
 	achievement					Achievement					@relation(fields: [achievement_id], references: [id])
 }
 
-model UserInvalidToken {
-	id									Int									@id @default(autoincrement())
+model UserResetPassword {
 	user_id							Int
 	token								String
 	deadline						DateTime
+	@@unique([user_id, token])
 	//// relations
 	user								User								@relation(fields: [user_id], references: [id])
 }

@@ -29,6 +29,7 @@ const list: {
 		US_009: 'Le jeton a expiré, veuillez répéter le processus',
 		US_010: 'Le jeton n\'est pas valide',
 		US_011: 'La limite de jeton n\'existe pas',
+		US_020: 'L\'initialisation de la réinitialisation du mot de passe a échoué',
 
 		US_101: 'L\'utilisateur a été authentifié avec succès',
 		US_102: 'La vérification est en attente d\'une réponse',
@@ -38,6 +39,7 @@ const list: {
 		US_106: 'Le compte est supprimé',
 		US_107: 'L\'utilisateur existe',
 		US_108: 'L\'utilisateur a été reconnu',
+		US_120: 'L\'initialisation de la réinitialisation du mot de passe a commencé'
 	},
 	enigma: {
 		EN_001: 'Identifiant incorrect',
