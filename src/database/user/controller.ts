@@ -28,11 +28,11 @@ export default class controller {
 		});
 	}
 
-	static findOne(name: string): Promise<User | null> {
+	static findOne(nameOrId: string | number): Promise<User | null> {
 		return user.findUnique({
-			where: {
-				name
-			}
+			where: (typeof nameOrId === 'number')
+				? { id: nameOrId }
+				: { name: nameOrId }
 		});
 	}
 
@@ -83,16 +83,16 @@ export default class controller {
 		});
 	}
 
-	static async check(name: string, password: string): Promise<User | null | boolean> {
+	static async check(nameOrId: string | number, password: string): Promise<null | boolean> {
 		return new Promise((res, rej) => {
 			user.findUnique({
-				where: {
-					name
-				}
+				where: (typeof nameOrId === 'number')
+					? { id: nameOrId }
+					: { name: nameOrId }
 			})
 				.then((d) => {
 					if (!d)
-						return res(null);
+						return rej(null);
 					argon2.verify(d.password, password)
 						.then((val) => res(val))
 						.catch(() => rej(null));

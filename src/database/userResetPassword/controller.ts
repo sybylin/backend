@@ -1,10 +1,27 @@
 import { userResetPassword } from 'database/db.instance';
 import { UserResetPassword } from '@prisma/client';
 
+import type { Prisma } from '@prisma/client';
+
+interface findTokenInterface {
+	user_id: number;
+	token: string;
+	deadline: Date;
+	user: {
+		name: string;
+		email: string;
+	}
+}
+
 export default class controller {
 	static async create(data: UserResetPassword): Promise<UserResetPassword | null | never> {
 		if (!data)
 			return null;
+		await userResetPassword.deleteMany({
+			where: {
+				user_id: data.user_id
+			}
+		});
 		return userResetPassword.create({
 			data: {
 				...data
@@ -12,8 +29,8 @@ export default class controller {
 		});
 	}
 
-	static async read(user_id: number): Promise<UserResetPassword | UserResetPassword[] | null> {
-		return userResetPassword.findMany({
+	static async read(user_id: number): Promise<UserResetPassword | null> {
+		return userResetPassword.findFirst({
 			where: {
 				user_id
 			}
@@ -59,10 +76,26 @@ export default class controller {
 		});
 	}
 
-	static async findByToken(searchToken: string): Promise<UserResetPassword | UserResetPassword[] | null> {
+	static async deleteUserTokens(userId: number): Promise<Prisma.BatchPayload> {
+		return userResetPassword.deleteMany({
+			where: {
+				user_id: userId
+			}
+		});
+	}
+
+	static async findByToken(searchToken: string): Promise<findTokenInterface | findTokenInterface[] | null> {
 		return userResetPassword.findMany({
 			where: {
 				token: searchToken
+			},
+			include: {
+				user: {
+					select: {
+						name: true,
+						email: true
+					}
+				}
 			},
 			orderBy: [
 				{

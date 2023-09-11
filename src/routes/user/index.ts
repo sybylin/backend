@@ -10,7 +10,7 @@ import { error, success } from 'code/format';
 import { JWT_COOKIE_NAME, generateJwtToken, jwtMiddleware } from 'lib/jwt';
 import Mail from 'lib/mail';
 import UserController from 'database/user/controller';
-import resetToken from './resetToken';
+import { initPasswordReset, resetPassword } from './resetPassword';
 
 import type { NextFunction, Request, Response } from 'express';
 
@@ -288,7 +288,8 @@ class account {
 export default Router()
 	.get('/check', jwtMiddleware, account.rememberMe)
 	.get('/logout', jwtMiddleware, account.logout)
-	.get('/reset', resetToken)
+	.get('/reset/init', initPasswordReset)
+	.get('/reset/update', resetPassword)
 	.get('/:name', jwtMiddleware, account.get)
 
 	.post('/create', account.create)

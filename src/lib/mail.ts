@@ -14,6 +14,7 @@ export interface MailInfo {
 export class Mail {
 	private confirmMail: string;
 	private passwordMail: string;
+	private passwordUpdateMail: string;
 	private verifyMail: string;
 	private nodeMailer: nodemailer.Transporter<SMTPTransport.SentMessageInfo>;
 	public defaultMail: string;
@@ -21,6 +22,7 @@ export class Mail {
 	constructor(defaultMail?: string) {
 		this.confirmMail = '';
 		this.passwordMail = '';
+		this.passwordUpdateMail = '';
 		this.verifyMail = '';
 		this.nodeMailer = nodemailer.createTransport(
 			(process.env.NODE_ENV === 'production')
@@ -44,6 +46,8 @@ export class Mail {
 			.then((d) => this.confirmMail = d);
 		readFile(resolve('.', 'mail', 'dist', 'password.html'), { encoding: 'utf-8' })
 			.then((d) => this.passwordMail = d);
+		readFile(resolve('.', 'mail', 'dist', 'passwordUpdate.html'), { encoding: 'utf-8' })
+			.then((d) => this.passwordUpdateMail = d);
 		readFile(resolve('.', 'mail', 'dist', 'verify.html'), { encoding: 'utf-8' })
 			.then((d) => this.verifyMail = d);
 	}
@@ -103,6 +107,14 @@ export class Mail {
 			to,
 			subject: 'Sibyllin password reset'
 		}, args);
+	}
+
+	passwordUpdate(to: string): MailReturn {
+		return this.send(this.passwordUpdateMail, {
+			from: 'Sibyllin <verify@sibyllin.app>',
+			to,
+			subject: 'Sibyllin password update'
+		});
 	}
 
 	accountVerification(to: string, args: Record<'token', string>): MailReturn {

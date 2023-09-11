@@ -30,6 +30,8 @@ const list: {
 		US_010: 'Token is invalid',
 		US_011: 'Token deadline not exist',
 		US_020: 'Password reset initialization failed',
+		US_021: 'Passwords aren\'t the same',
+		US_022: 'Reset link does not exist or is no longer valid',
 
 		US_101: 'User has been successfully authenticated',
 		US_102: 'Verification is awaiting a response',
@@ -39,7 +41,8 @@ const list: {
 		US_106: 'Account is deleted',
 		US_107: 'User exist',
 		US_108: 'User is recognized',
-		US_120: 'Password reset initialization started'
+		US_120: 'Password reset initialization started',
+		US_121: 'Password reset successful'
 	},
 	enigma: {
 		EN_001: 'Incorrect id',

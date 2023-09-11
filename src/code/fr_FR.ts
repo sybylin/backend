@@ -30,6 +30,8 @@ const list: {
 		US_010: 'Le jeton n\'est pas valide',
 		US_011: 'La limite de jeton n\'existe pas',
 		US_020: 'L\'initialisation de la réinitialisation du mot de passe a échoué',
+		US_021: 'Les mots de passe sont différents',
+		US_022: 'Le lien de réinitialisation n\'existe pas ou n\'est plus valide',
 
 		US_101: 'L\'utilisateur a été authentifié avec succès',
 		US_102: 'La vérification est en attente d\'une réponse',
