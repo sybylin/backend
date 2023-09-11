@@ -90,13 +90,18 @@ model User {
 	user_reset_password	UserResetPassword[]
 
 	achievement_creator	AchievementCreator[]
+
+	token_list					Token[]
 }
 
 model Token {
 	id									Int									@id @default(autoincrement())
+	user_id							Int
 	token								String
 	is_invalid					Boolean							@default(false)
 	deadline						DateTime
+	//// relations
+	user								User								@relation(fields: [user_id], references: [id])
 }
 // #endregion Main tables
 

@@ -15,6 +15,10 @@ const list: {
 		RE_001: 'Le corps de la requête est vide',
 		RE_002: 'La clé n\'est pas présente dans le corps de la requête ou est vide'
 	},
+	jwt: {
+		JW_001: 'jwt est invalide',
+		JW_002: 'L\'utilisateur lié au jwt n\'a pas les droits nécessaires'
+	},
 
 	/// Modules
 	user: {
@@ -41,7 +45,8 @@ const list: {
 		US_106: 'Le compte est supprimé',
 		US_107: 'L\'utilisateur existe',
 		US_108: 'L\'utilisateur a été reconnu',
-		US_120: 'L\'initialisation de la réinitialisation du mot de passe a commencé'
+		US_120: 'L\'initialisation de la réinitialisation du mot de passe a commencé',
+		US_122: 'Le rôle est mis à jour'
 	},
 	enigma: {
 		EN_001: 'Identifiant incorrect',

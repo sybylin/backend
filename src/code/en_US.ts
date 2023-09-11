@@ -15,6 +15,10 @@ const list: {
 		RE_001: 'Request body is empty',
 		RE_002: 'Key is not present in the request body or is empty'
 	},
+	jwt: {
+		JW_001: 'jwt is invalid',
+		JW_002: 'The user linked to the jwt does not have the necessary rights'
+	},
 
 	/// Modules
 	user: {
@@ -42,7 +46,8 @@ const list: {
 		US_107: 'User exist',
 		US_108: 'User is recognized',
 		US_120: 'Password reset initialization started',
-		US_121: 'Password reset successful'
+		US_121: 'Password reset successful',
+		US_122: 'Role is updated'
 	},
 	enigma: {
 		EN_001: 'Incorrect id',

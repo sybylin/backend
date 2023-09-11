@@ -1,6 +1,7 @@
 import * as argon2 from 'argon2';
 import { user } from 'database/db.instance';
 import { User } from '@prisma/client';
+import type { Role } from '@/routes/user/interface';
 
 interface CleanUser {
 	id: number;
@@ -12,14 +13,14 @@ interface CleanUser {
 }
 
 export default class controller {
-	static async create(data: User): Promise<User | null | never> {
+	static async create(data: Omit<User, 'id' | 'avatar' | 'creation_date' | 'modification_date'>): Promise<User | null | never> {
 		if (!data.name || !data.email || !data.password)
 			return null;
 		return user.create({
 			data: {
 				name: data.name,
 				email: data.email,
-				avatar: data.avatar,
+				avatar: null,
 				password: await argon2.hash(data.password),
 				verify: data.verify,
 				token: data.token,
@@ -101,7 +102,7 @@ export default class controller {
 		});
 	}
 
-	static async update(data: User, passNotChange: boolean = false): Promise<User> {
+	static async update(data: Omit<User, 'avatar' | 'role' | 'creation_date' | 'modification_date'>, passNotChange: boolean = false): Promise<User> {
 		return user.update({
 			where: {
 				id: data.id
@@ -109,7 +110,6 @@ export default class controller {
 			data: {
 				name: data.name,
 				email: data.email,
-				avatar: data.avatar,
 				password: (passNotChange)
 					? await argon2.hash(data.password)
 					: data.password,
@@ -133,11 +133,24 @@ export default class controller {
 		return (update !== null);
 	}
 
-	static delete(name: string): Promise<User> {
-		return user.delete({
-			where: {
-				name
+	static async updateRole(idOrName: number | string, new_role: Role): Promise<boolean> {
+		const update = await user.update({
+			where: (typeof idOrName === 'number')
+				? { id: idOrName }
+				: { name: idOrName },
+			data: {
+				role: new_role
 			}
+		});
+
+		return (update !== null);
+	}
+
+	static delete(nameOrId: string | number): Promise<User> {
+		return user.delete({
+			where: (typeof nameOrId === 'number')
+				? { id: nameOrId }
+				: { name: nameOrId }
 		});
 	}
 

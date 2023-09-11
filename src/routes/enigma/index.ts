@@ -117,7 +117,7 @@ class enigma {
 }
 
 export default Router()
-	.get('/one', jwtMiddleware, enigma.get)
-	.get('/all', jwtMiddleware, enigma.getAllOfSeries)
-	.get('/finished', jwtMiddleware, enigma.isFinished)
-	.get('/check', jwtMiddleware, enigma.verifySolution);
+	.get('/one', jwtMiddleware.acceptUser, enigma.get)
+	.get('/all', jwtMiddleware.acceptUser, enigma.getAllOfSeries)
+	.get('/finished', jwtMiddleware.acceptUser, enigma.isFinished)
+	.get('/check', jwtMiddleware.acceptUser, enigma.verifySolution);

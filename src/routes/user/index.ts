@@ -1,301 +1,270 @@
-import { randomInt } from 'crypto';
 import { Router } from 'express';
-import isEmail from 'validator/lib/isEmail';
 import isEmpty from 'validator/lib/isEmpty';
 import isNumeric from 'validator/lib/isNumeric';
 import normalizeEmail from 'validator/lib/normalizeEmail';
-
+import { isString } from 'lodash';
 import { getInfo } from 'code/index';
 import { error, success } from 'code/format';
 import { JWT_COOKIE_NAME, generateJwtToken, jwtMiddleware } from 'lib/jwt';
-import Mail from 'lib/mail';
+import mailSystem from 'lib/mail';
 import UserController from 'database/user/controller';
+import { verifyRequest, generateToken } from './utility';
 import { initPasswordReset, resetPassword } from './resetPassword';
 
-import type { NextFunction, Request, Response } from 'express';
+import type { NextFunction, Response } from 'express';
+import type { UserRequest } from './interface';
 
-export const Role = {
-	USER: 'USER',
-	MODERATOR: 'MODERATOR',
-	ADMINISTRATOR: 'ADMINISTRATOR'
-};
-export type Role = (typeof Role)[keyof typeof Role]
-
-const generateToken = (): { token: number; deadline: Date } => {
-	const date = new Date();
-	date.setTime(date.getTime() + 900000);
-	return {
-		token: randomInt(10000000, 100000000), // 8 digits code
-		deadline: date
-	};
-};
-
-const VerifUserPass = (req: Request<any>, res: Response<any>, checkPass = true) => {
-	if (!Object.keys(req.body).length)
-		return error(req, res, 'RE_001');
-	if (!req.body.name || isEmpty(req.body.name))
-		return error(req, res, 'RE_002', { data: { key: 'name' } });
-	if (checkPass) {
-		if (!req.body.password || isEmpty(req.body.password))
-			return error(req, res, 'RE_002', { data: { key: 'password' } });
+class accountCRUD {
+	static async create(req: UserRequest, res: Response<any>, next: NextFunction) {
+		verifyRequest(req, res, false, true);
+		const mail = normalizeEmail(req.body.email);
+		if (mail === false)
+			return error(req, res, 'US_004');
+		const token = generateToken();
+		const account = await UserController.create({
+			name: req.body.name,
+			email: mail,
+			role: 'USER',
+			password: req.body.password as string,
+			verify: false,
+			token: token.token,
+			token_deadline: token.deadline
+		})
+			.catch((e) => {
+				if (e.code === 'P2002') {
+					if (e.meta.target.includes('name'))
+						return error(req, res, 'US_006');
+					if (e.meta.target.includes('email'))
+						return error(req, res, 'US_007');
+				} else
+					next(e);
+			});
+		if (!account)
+			return next(new Error(getInfo('GE_003').message));
+		await mailSystem.accountVerification(mail, { token: token.token.toString() })
+			.catch(() => next(new Error(getInfo('GE_002').message)));
+		return success(req, res, 'US_104', {
+			data: {
+				user: {
+					name: account.name,
+					email: account.email,
+					verify: false,
+					timestamp: new Date().getTime()
+				}
+			}
+		});
 	}
-};
 
-class account {
-	static get(req: Request<any>, res: Response<any>, next: NextFunction) {
-		if (!req.params.length)
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	static async read(req: UserRequest, res: Response<any>, _next: NextFunction) {
+		verifyRequest(req, res, false, false);
+		return success(req, res, 'US_107', {
+			data: {
+				...(await UserController.cleanFindOne(req.body.name))
+			}
+		});
+	}
+
+	static async update(req: UserRequest, res: Response<any>, next: NextFunction) {
+		verifyRequest(req, res, true, true);
+		const mail = normalizeEmail(req.body.email);
+		if (mail === false)
+			return error(req, res, 'US_004');
+		const accountCheck = await UserController.check(req.body.name, req.body.password)
+			.catch((e) => {
+				if (e.code === 'P2002') {
+					if (e.meta.target.includes('name'))
+						return error(req, res, 'US_006');
+					if (e.meta.target.includes('email'))
+						return error(req, res, 'US_007');
+				} else
+					next(e);
+			});
+		if (!accountCheck)
+			return error(req, res, 'US_001');
+		const user = await UserController.findOne(req.body.name);
+		if (!user)
+			return error(req, res, 'GE_001');
+		const token = generateToken();
+		await UserController.update({
+			id: user.id,
+			name: req.body.name,
+			email: mail ?? user.email,
+			verify: !(mail),
+			token: (mail)
+				? token.token
+				: null,
+			token_deadline: (mail)
+				? token.deadline
+				: null,
+			password: req.body.password as string ?? undefined
+		}, !!(req.body.password))
+			.catch(() => next(new Error(getInfo('GE_002').message)));
+		mailSystem.accountVerification(mail, { token: String(token.token) })
+			.catch(() => next(new Error(getInfo('GE_002').message)));
+		return success(req, res, 'US_102', {
+			data: {
+				mailSend: true
+			}
+		});
+	}
+
+	static async delete(req: UserRequest, res: Response<any>, next: NextFunction) {
+		verifyRequest(req, res, true, false);
+		const accountCheck = await UserController.check(req.body.name, req.body.password)
+			.catch((e) => next(e));
+		if (!accountCheck)
+			return error(req, res, ('US_001'));
+		await UserController.delete(req.body.name)
+			.catch((e) => next(e));
+		return success(req, res, 'US_106', { data: { name: req.body.name } });
+	}
+}
+
+class account extends accountCRUD {
+	static async getUser(req: UserRequest, res: Response<any>, next: NextFunction) {
+		if (!req.params.name)
 			return error(req, res, 'RE_002', { data: { key: 'name' } });
-		UserController.findOne(req.params.name)
-			.then((d) => {
-				if (!d)
-					return error(req, res, 'US_001');
-				return success(req, res, 'US_107', {
-					data: {
-						user: {
-							name: d?.name,
-							avatar: d?.avatar,
-						}
-					}
-				});
-			})
+		const user = await UserController.findOne(req.params.name)
 			.catch(() => next(new Error(getInfo('GE_001').message)));
+		if (!user)
+			return error(req, res, 'US_001');
+		return success(req, res, 'US_107', {
+			data: {
+				user: {
+					name: user.name,
+					avatar: user.avatar,
+				}
+			}
+		});
+	}
+
+	static async checkUser(req: UserRequest, res: Response<any>, next: NextFunction) {
+		verifyRequest(req, res, true, false);
+		const check = await UserController.check(req.body.name, req.body.password)
+			.catch(() => next(new Error(getInfo('GE_001').message)));
+		if (check === null || check === false) {
+			return error(req, res,
+				(typeof check !== 'boolean')
+					? 'US_001'
+					: 'US_002',
+				{
+					data: {
+						userNotExist: (typeof check !== 'boolean'),
+						incorrectPassword: (typeof check === 'boolean')
+					}
+				}
+			);
+		}
+		const user = await UserController.cleanFindOne(req.body.name)
+			.catch(() => next(new Error(getInfo('GE_001').message)));
+		if (!user)
+			return error(req, res, 'US_001');
+		return success(req, res,
+			'US_101',
+			{
+				data: {
+					userNotExist: false,
+					incorrectPassword: false
+				}
+			},
+			await generateJwtToken(user.id, user.name, req.body.remember ?? false)
+		);
+	}
+
+	static async token(req: UserRequest, res: Response<any>, next: NextFunction) {
+		verifyRequest(req, res, false, false);
+		if (!req.body.token) {
+			const user = await UserController.findOne(req.body.name)
+				.catch(() => next(new Error(getInfo('GE_001').message)));
+			if (!user || user.verify) {
+				return error(req, res,
+					(!user)
+						? 'US_001'
+						: 'US_003'
+				);
+			}
+			const token = generateToken();
+			user.verify = false;
+			user.token = token.token;
+			user.token_deadline = token.deadline;
+			await UserController.update(user)
+				.catch(() => next(new Error(getInfo('GE_001').message)));
+			mailSystem.accountVerification(user.email, { token: String(user.token) })
+				.catch(() => next(new Error(getInfo('GE_002').message)));
+			return success(req, res, 'US_102', {
+				data: {
+					mailSend: true
+				}
+			});
+		} else {
+			if (isEmpty(String(req.body.token)))
+				return error(req, res, 'RE_002', { data: { key: 'token' } });
+			if (!isNumeric(String(req.body.token)) || String(req.body.token).length !== 8)
+				return error(req, res, 'RE_007');
+			const user = await UserController.findOne(req.body.name)
+				.catch(() => next(new Error(getInfo('GE_001').message)));
+			if (!user || user.verify) {
+				return error(req, res,
+					(!user)
+						? 'US_001'
+						: 'US_003'
+				);
+			}
+			const currentDate = new Date();
+			if (!user.token_deadline)
+				return next(new Error(getInfo('US_010').message));
+			if (currentDate.getTime() > user.token_deadline.getTime())
+				return error(req, res, 'US_009');
+			if (user.token !== Number(req.body.token))
+				return error(req, res, 'US_010');
+			user.verify = true;
+			await UserController.update(user)
+				.catch(() => next(new Error(getInfo('GE_001').message)));
+			return success(req, res, 'US_103');
+		}
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	static rememberMe(req: Request<any>, res: Response<any>, _next: NextFunction) {
-		return success(req, res, 'US_108');
-	}
-
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	static logout(_req: Request<any>, res: Response<any>, _next: NextFunction) {
+	static async logout(req: UserRequest, res: Response<any>, _next: NextFunction) {
 		return res
 			.clearCookie(JWT_COOKIE_NAME)
 			.status(200)
 			.send({ logout: true });
 	}
 
-	static check(req: Request<any>, res: Response<any>, next: NextFunction) {
-		VerifUserPass(req, res);
-		UserController.check(req.body.name, req.body.password)
-			.then(async (check) => {
-				if (check === null) {
-					return success(req, res, 'US_001', {
-						data: {
-							userNotExist: true,
-							incorrectPassword: false
-						}
-					});
-				}
-				if (check === false) {
-					return success(req, res, 'US_002', {
-						data: {
-							userNotExist: false,
-							incorrectPassword: true
-						}
-					});
-				}
-				const user = await UserController.findOne(req.body.name);
-				if (!user)
-					throw new Error('no user');
-				return success(req, res, 'US_101', {
-					data: {
-						userNotExist: false,
-						incorrectPassword: false
-					},
-				},
-				await generateJwtToken(user.id, user.name, req.body.remember ?? false));
-			})
-			.catch(() => next(new Error(getInfo('GE_001').message)));
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	static rememberMe(req: UserRequest, res: Response<any>, _next: NextFunction) {
+		return success(req, res, 'US_108');
 	}
 
-	static token(req: Request<any>, res: Response<any>, next: NextFunction) {
-		VerifUserPass(req, res, false);
-		if (!req.body.token) {
-			UserController.findOne(req.body.name)
-				.then((d) => {
-					if (!d)
-						return error(req, res, 'US_001');
-					if (d.verify)
-						return error(req, res, 'US_003');
-					const token = generateToken();
-					d.verify = false;
-					d.token = token.token;
-					d.token_deadline = token.deadline;
-					UserController.update(d)
-						.then(() => {
-							Mail.accountVerification(d.email, { token: String(d.token) })
-								.then(() => success(req, res, 'US_102', {
-									data: {
-										mailSend: true
-									}
-								}))
-								.catch(() => next(new Error(getInfo('GE_002').message)));
-						})
-						.catch((e) => next(e));
-				})
-				.catch((e) => next(e));
-		} else {
-			if (isEmpty(String(req.body.token)))
-				return error(req, res, 'RE_002', { data: { key: 'token' } });
-			if (!isNumeric(String(req.body.token)) || String(req.body.token).length !== 8)
-				return error(req, res, 'RE_007');
-			UserController.findOne(req.body.name)
-				.then((d) => {
-					if (!d)
-						return error(req, res, 'US_001');
-					if (d.verify)
-						return error(req, res, 'US_003');
-					const currentDate = new Date();
-					if (d.token_deadline) {
-						if (currentDate.getTime() > d.token_deadline.getTime())
-							return error(req, res, 'US_009');
-						if (d.token !== Number(req.body.token))
-							return error(req, res, 'US_010');
-						d.verify = true;
-						UserController.update(d)
-							.then(() => success(req, res, 'US_103'))
-							.catch((e) => next(e));
-					} else
-						next(new Error(getInfo('US_010').message));
-				})
-				.catch((e) => next(e));
-		}
-	}
+	static async updateRole(req: UserRequest, res: Response<any>, next: NextFunction) {
+		verifyRequest(req, res, false, false);
+		if (!req.body.role || isEmpty(req.body.role) || !isString(req.body.role))
+			return error(req, res, 'RE_002', { data: { key: 'role' } });
 
-	static create(req: Request<any>, res: Response<any>, next: NextFunction) {
-		VerifUserPass(req, res);
-		if (!req.body.email || isEmpty(req.body.email))
-			return error(req, res, 'RE_002', { data: { key: 'email' } });
-		if (!isEmail(req.body.email))
-			return error(req, res, 'US_005');
-		const mail = normalizeEmail(req.body.email);
-		if (mail === false)
-			return error(req, res, 'US_004');
-		
-		const token = generateToken();
-		UserController.create({
-			id: 0,
-			name: req.body.name,
-			email: mail,
-			role: 'USER',
-			avatar: null,
-			password: req.body.password,
-			verify: false,
-			token: token.token,
-			token_deadline: token.deadline,
-			creation_date: null,
-			modification_date: null
-		})
-			.then((account) => {
-				if (!account)
-					return next(new Error(getInfo('GE_003').message));
-				
-				Mail.accountVerification(mail, { token: token.token.toString() })
-					.then(async () => {
-						return success(req, res, 'US_104', {
-							data: {
-								user: {
-									name: account.name,
-									email: account.email,
-									verify: false,
-									timestamp: new Date().getTime()
-								}
-							}
-						});
-					})
-					.catch(() => next(new Error(getInfo('GE_002').message)));
-			})
-			.catch((e) => {
-				if (e.code === 'P2002') {
-					if (e.meta.target.includes('name'))
-						return error(req, res, 'US_006');
-					if (e.meta.target.includes('email'))
-						return error(req, res, 'US_007');
-				} else
-					next(e);
-			});
-	}
-
-	static update(req: Request<any>, res: Response<any>, next: NextFunction) {
-		VerifUserPass(req, res);
-		if (!isEmail(req.body.email))
-			return error(req, res, 'US_005');
-		const mail = normalizeEmail(req.body.email);
-		if (mail === false)
-			return error(req, res, 'US_004');
-		UserController.check(req.body.name, req.body.password)
-			.then(async (check) => {
-				console.log(check);
-				if (!check)
-					return error(req, res, 'US_001');
-				const user = await UserController.findOne(req.body.name);
-				if (user) {
-					const token = generateToken();
-					UserController.update({
-						id: user.id,
-						name: req.body.name,
-						email: mail ?? user.email,
-						verify: !(mail),
-						role: req.body.user ?? 'USER',
-						token: (mail)
-							? token.token
-							: null,
-						token_deadline: (mail)
-							? token.deadline
-							: null,
-						avatar: req.body.avatar ?? undefined,
-						password: req.body.password ?? undefined,
-						creation_date: null,
-						modification_date: null
-					}, !!(req.body.password))
-						.then(() => {
-							Mail.accountVerification(mail, { token: String(token.token) })
-								.then(() => success(req, res, 'US_102', {
-									data: {
-										mailSend: true
-									}
-								}))
-								.catch(() => next(new Error(getInfo('GE_002').message)));
-						})
-						.catch(() => next(new Error(getInfo('GE_002').message)));
-				}
-			})
-			.catch((e) => {
-				if (e.code === 'P2002') {
-					if (e.meta.target.includes('name'))
-						return error(req, res, 'US_006');
-					if (e.meta.target.includes('email'))
-						return error(req, res, 'US_007');
-				} else
-					next(e);
-			});
-	}
-
-	static delete(req: Request<any>, res: Response<any>, next: NextFunction) {
-		VerifUserPass(req, res);
-		UserController.check(req.body.name, req.body.password)
-			.then(async (check) => {
-				if (!check)
-					return error(req, res, ('US_001'));
-				UserController.delete(req.body.name)
-					.then(() => success(req, res,'US_106'))
-					.catch((e) => next(e));
-			})
-			.catch((e) => next(e));
+		await UserController.updateRole(req.body.name, req.body.role)
+			.catch(() => next(new Error(getInfo('GE_002').message)));
+		return success(req, res, 'US_122', {
+			data: {
+				roleIsUpdate: true
+			}
+		});
 	}
 }
 
 export default Router()
-	.get('/check', jwtMiddleware, account.rememberMe)
-	.get('/logout', jwtMiddleware, account.logout)
-	.get('/reset/init', initPasswordReset)
-	.get('/reset/update', resetPassword)
-	.get('/:name', jwtMiddleware, account.get)
+	.get('/check', jwtMiddleware.acceptUser, account.rememberMe)
+	.get('/logout', jwtMiddleware.acceptUser, account.logout)
+	.get('/user/:name', jwtMiddleware.acceptUser, account.getUser)
 
 	.post('/create', account.create)
-	.post('/check', account.check)
+	.post('/check', account.checkUser)
 	.post('/token', account.token)
+	.post('/role', jwtMiddleware.acceptAdministrator, account.updateRole)
+	.post('/reset/init', initPasswordReset)
+	.post('/reset/update', resetPassword)
 
-	.put('/', jwtMiddleware, account.update)
-	
-	.delete('/', jwtMiddleware, account.delete);
+	.put('/', jwtMiddleware.acceptUser, account.update)
+
+	.delete('/', jwtMiddleware.acceptUser, account.delete);

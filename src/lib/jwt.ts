@@ -3,9 +3,20 @@ import jwt from 'jsonwebtoken';
 import UserController from 'database/user/controller';
 import TokenController from 'database/token/controller';
 import type { Request, Response, NextFunction } from 'express';
+import { User } from '@prisma/client';
+import { error } from '@/code/format';
+import getInfo from '@/code';
+
+import { Role } from '@/routes/user/interface';
 
 export type token = Record<'token' | 'xsrf' | 'remember', string | boolean>;
 export type tokenContent = Record<'id' | 'name' | 'xsrfToken', string | number>
+enum jwtToken {
+	unauthorized = 1,
+	forceLogout,
+	noUser,
+	invalidToken
+}
 
 export const JWT_COOKIE_NAME = 'access_token';
 export const REMEMBER_COOKIE_NAME = 'remember_me';
@@ -43,7 +54,7 @@ export const generateJwtToken = async (id: number, name: string, rememberMe = fa
 							: milliseconds.one
 					)
 				);
-				TokenController.create({ token: encoded, deadline });
+				TokenController.create({ user_id: id, token: encoded, deadline });
 				res({
 					token: encoded,
 					xsrf: xsrfToken,
@@ -88,23 +99,82 @@ export const forceLogout = (_req: Request, res: Response, _next: NextFunction): 
 		.status(204);
 };
 
-export const jwtMiddleware = (req: Request, res: Response, next: NextFunction): void => {
-	const xsrfTokenReq = req.headers['x-xsrf-token'] as string;
-	const authHeader = req.cookies[JWT_COOKIE_NAME];
-	
-	if (!xsrfTokenReq || !authHeader)
-		res.sendStatus(401);
-	else {
-		jwt.verify(authHeader, JWT_TOKEN, async (err: any, decoded: any) => {
-			if (err || !decoded || !decoded.name || decoded.xsrfToken !== xsrfTokenReq)
-				return forceLogout(req, res, next);
-			const tokenIsValid = await TokenController.tokenIsValid(authHeader);
-			const user = await UserController.findOne(decoded.name);
-
-			if (!user || !tokenIsValid)
-				return res.sendStatus(401);
-			req.user = user;
-			next();
+export class jwtMiddleware {
+	private static async verifyJwt(xsrfTokenReq: string, authHeader: string): Promise<User> {
+		return new Promise((res, rej) => {
+			if (!xsrfTokenReq || !authHeader)
+				return rej(jwtToken.unauthorized);
+			jwt.verify(authHeader, JWT_TOKEN, async (err: any, decoded: any) => {
+				if (err || !decoded || !decoded.name || decoded.xsrfToken !== xsrfTokenReq)
+					return rej(jwtToken.forceLogout);
+				const tokenIsValid = await TokenController.tokenIsValid(authHeader);
+				const user = await UserController.findOne(decoded.name);
+		
+				if (!user)
+					return rej(jwtToken.noUser);
+				if (!tokenIsValid)
+					return rej(jwtToken.invalidToken);
+				return res(user);
+			});
 		});
 	}
-};
+
+	private static async base(req: Request, res: Response, next: NextFunction): Promise<void> {
+		const user = await this.verifyJwt(
+			req.headers['x-xsrf-token'] as string,
+			req.cookies[JWT_COOKIE_NAME]
+		)
+			.catch((e: jwtToken) => {
+				if (e === jwtToken.forceLogout || e === jwtToken.unauthorized)
+					return forceLogout(req, res, next);
+				else
+					return error(req, res, 'JW_001');
+			});
+		if (!user)
+			return next(new Error(getInfo('GE_001').message));
+		req.user = user;
+	}
+
+	/**
+	 * Only users with the USER, MODERATOR or ADMINISTRATOR tag will be accepted.
+	 */
+	static acceptUser(req: Request, res: Response, next: NextFunction): void {
+		this.base(req, res, next);
+		if (!req.user)
+			return next(new Error(getInfo('GE_001').message));
+		if (
+			req.user.role === Role.USER ||
+			req.user.role === Role.MODERATOR ||
+			req.user.role === Role.ADMINISTRATOR
+		)
+			return next();
+		return error(req, res, 'JW_002');
+	}
+
+	/**
+	 * Only users with the MODERATOR or ADMINISTRATOR tag will be accepted.
+	 */
+	static acceptModerator(req: Request, res: Response, next: NextFunction): void {
+		this.base(req, res, next);
+		if (!req.user)
+			return next(new Error(getInfo('GE_001').message));
+		if (
+			req.user.role === Role.MODERATOR ||
+			req.user.role === Role.ADMINISTRATOR
+		)
+			return next();
+		return error(req, res, 'JW_002');
+	}
+
+	/**
+	 * Only users with the ADMINISTRATOR tag will be accepted.
+	 */
+	static acceptAdministrator(req: Request, res: Response, next: NextFunction): void {
+		this.base(req, res, next);
+		if (!req.user)
+			return next(new Error(getInfo('GE_001').message));
+		if (req.user.role === Role.ADMINISTRATOR)
+			return next();
+		return error(req, res, 'JW_002');
+	}
+}

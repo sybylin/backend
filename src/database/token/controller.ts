@@ -2,11 +2,12 @@ import { token } from 'database/db.instance';
 import { Token } from '@prisma/client';
 
 export default class controller {
-	static async create(data: { token: string, deadline: Date, is_invalid?: boolean }): Promise<Token | null | never> {
+	static async create(data: { user_id: number, token: string, deadline: Date, is_invalid?: boolean }): Promise<Token | null | never> {
 		if (!data)
 			return null;
 		return token.create({
 			data: {
+				user_id: data.user_id,
 				token: data.token,
 				is_invalid: data.is_invalid ?? false,
 				deadline: data.deadline
@@ -64,9 +65,9 @@ export default class controller {
 		if (tokens) {
 			if (Array.isArray(tokens)) {
 				for (const token of tokens)
-					this.update({ id: token.id, token: token.token, is_invalid: true, deadline: token.deadline });
+					this.update({ id: token.id, user_id: token.user_id, token: token.token, is_invalid: true, deadline: token.deadline });
 			} else
-				this.update({ id: tokens.id, token: tokens.token, is_invalid: true, deadline: tokens.deadline });
+				this.update({ id: tokens.id, user_id: tokens.user_id, token: tokens.token, is_invalid: true, deadline: tokens.deadline });
 		}
 	}
 
@@ -83,7 +84,7 @@ export default class controller {
 		});
 	}
 
-	static async tokenIsValid(searchToken: string): Promise<boolean> {
+	static async tokenIsValid(searchToken: string, userId?: number): Promise<boolean> {
 		const currentTime = new Date().getTime();
 		const tokens = await this.findByToken(searchToken);
 		let token: Token | null = null;
@@ -101,6 +102,8 @@ export default class controller {
 				: null;
 		}
 
+		if (userId)
+			return (token && token.is_invalid === false && token.user_id === userId) ?? false;
 		return (token && token.is_invalid === false) ?? false;
 	}
 }
