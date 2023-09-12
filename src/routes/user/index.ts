@@ -13,6 +13,8 @@ import { initPasswordReset, resetPassword } from './resetPassword';
 
 import type { NextFunction, Response } from 'express';
 import type { UserRequest } from './interface';
+import { enumCheckUser } from 'database/user/controller';
+import { log } from '@/lib/log';
 
 class accountCRUD {
 	static async create(req: UserRequest, res: Response<any>, next: NextFunction) {
@@ -145,35 +147,45 @@ class account extends accountCRUD {
 	static async checkUser(req: UserRequest, res: Response<any>, next: NextFunction) {
 		if (verifyRequest(req, res, true, false))
 			return next();
-		const check = await UserController.check(req.body.name, req.body.password)
-			.catch(() => next(new Error(getInfo('GE_001').message)));
-		if (check === null || check === false) {
-			return error(req, res,
-				(typeof check !== 'boolean')
-					? 'US_001'
-					: 'US_002',
+		
+		const check = await UserController.check(req.body.name, req.body.password);
+		if (check.info !== enumCheckUser.OK) {
+			const err = () => {
+				if (check.info === enumCheckUser.INCORRECT_PASSWORD)
+					return 'US_002';
+				if (check.info === enumCheckUser.NOT_FOUND)
+					return 'US_001';
+				return 'GE_001';
+			};
+
+			if (check.info === enumCheckUser.ERROR)
+				log.error(check.data);
+			return error(req, res, err(), {
+				data: {
+					userNotExist: check.info === enumCheckUser.NOT_FOUND,
+					incorrectPassword: check.info === enumCheckUser.INCORRECT_PASSWORD
+				}
+			});
+		}
+
+		try {
+			const user = await UserController.cleanFindOne(req.body.name);
+			if (!user)
+				return error(req, res, 'US_001');
+			return success(req, res,
+				'US_101',
 				{
 					data: {
-						userNotExist: (typeof check !== 'boolean'),
-						incorrectPassword: (typeof check === 'boolean')
+						userNotExist: false,
+						incorrectPassword: false
 					}
-				}
+				},
+				await generateJwtToken(user.id, user.name, req.body.remember ?? false)
 			);
+		} catch (e) {
+			log.error(e);
+			return next(new Error(getInfo('GE_001').message));
 		}
-		const user = await UserController.cleanFindOne(req.body.name)
-			.catch(() => next(new Error(getInfo('GE_001').message)));
-		if (!user)
-			return error(req, res, 'US_001');
-		return success(req, res,
-			'US_101',
-			{
-				data: {
-					userNotExist: false,
-					incorrectPassword: false
-				}
-			},
-			await generateJwtToken(user.id, user.name, req.body.remember ?? false)
-		);
 	}
 
 	static async token(req: UserRequest, res: Response<any>, next: NextFunction) {
@@ -238,11 +250,6 @@ class account extends accountCRUD {
 			.send({ logout: true });
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	static rememberMe(req: UserRequest, res: Response<any>, _next: NextFunction) {
-		return success(req, res, 'US_108');
-	}
-
 	static async updateRole(req: UserRequest, res: Response<any>, next: NextFunction) {
 		if (verifyRequest(req, res, false, false))
 			return next();
@@ -260,7 +267,6 @@ class account extends accountCRUD {
 }
 
 export default Router()
-	.get('/check', jwtMiddleware.acceptUser, account.rememberMe)
 	.get('/logout', jwtMiddleware.acceptUser, account.logout)
 	.get('/user/:name', jwtMiddleware.acceptUser, account.getUser)
 

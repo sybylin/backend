@@ -17,7 +17,8 @@ const list: {
 	},
 	jwt: {
 		JW_001: 'jwt is invalid',
-		JW_002: 'The user linked to the jwt does not have the necessary rights'
+		JW_002: 'User linked to the jwt does not have the necessary rights',
+		JW_101: 'User linked to the jwt have the necessary rights'
 	},
 
 	/// Modules

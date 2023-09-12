@@ -2,12 +2,14 @@ import rateLimit from 'express-rate-limit';
 import { log } from 'lib/log';
 import 'database/db.instance';
 import 'database/db.cron';
-import info from 'routes/defaultResponse';
-import main from 'routes/main';
 import achievement from 'routes/achievement';
 import enigma from 'routes/enigma';
+import info from 'routes/defaultResponse';
+import main from 'routes/main';
+import rights from 'routes/rights';
 import series from 'routes/series';
 import user from 'routes/user';
+
 import type { Application, NextFunction, Request, Response } from 'express';
 
 const JSONerror = (
@@ -65,6 +67,7 @@ export default (app: Application): void => {
 	app.use('/', apiLimiter, main);
 	app.use('/achievement', apiLimiter, achievement);
 	app.use('/enigma', apiLimiter, enigma);
+	app.use('/rights', apiLimiter, rights);
 	app.use('/series', apiLimiter, series);
 	app.use('/user', apiLimiter, user);
 

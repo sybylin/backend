@@ -11,6 +11,13 @@ export interface CleanUser {
   verify: boolean | null;
 }
 
+export enum enumCheckUser {
+	OK = 0,
+	NOT_FOUND,
+	INCORRECT_PASSWORD,
+	ERROR
+}
+
 export default class controller {
 	static async create(data: Omit<User, 'id' | 'avatar' | 'creation_date' | 'modification_date'>): Promise<{ name: string, email: string } | null> {
 		if (!data.name || !data.email || !data.password)
@@ -85,8 +92,11 @@ export default class controller {
 		});
 	}
 
-	static async check(nameOrId: string | number, password: string): Promise<null | boolean> {
-		return new Promise((res, rej) => {
+	static async check(
+		nameOrId: string | number,
+		password: string
+	): Promise<{ data: unknown, info: enumCheckUser }> {
+		return new Promise((res) => {
 			user.findUnique({
 				where: (typeof nameOrId === 'number')
 					? { id: nameOrId }
@@ -94,12 +104,16 @@ export default class controller {
 			})
 				.then((d) => {
 					if (!d)
-						return rej(null);
+						return res({ data: null, info: enumCheckUser.NOT_FOUND });
 					argon2.verify(d.password, password)
-						.then((val) => res(val))
-						.catch(() => rej(null));
+						.then((val) => {
+							res({ data: val, info: val
+								? enumCheckUser.OK
+								: enumCheckUser.INCORRECT_PASSWORD });
+						})
+						.catch((e) => res({ data: e, info: enumCheckUser.ERROR }));
 				})
-				.catch(() => rej(null));
+				.catch((e) => res({ data: e, info: enumCheckUser.ERROR }));
 		});
 	}
 

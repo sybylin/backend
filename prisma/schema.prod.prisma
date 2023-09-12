@@ -95,11 +95,11 @@ model User {
 }
 
 model Token {
-	id									Int									@id @default(autoincrement())
 	user_id							Int
 	token								String
 	is_invalid					Boolean							@default(false)
 	deadline						DateTime
+	@@unique([user_id, token])
 	//// relations
 	user								User								@relation(fields: [user_id], references: [id])
 }

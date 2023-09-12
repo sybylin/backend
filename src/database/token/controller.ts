@@ -5,6 +5,12 @@ export default class controller {
 	static async create(data: { user_id: number, token: string, deadline: Date, is_invalid?: boolean }): Promise<Token | null | never> {
 		if (!data)
 			return null;
+		await token.deleteMany({
+			where: {
+				user_id: data.user_id,
+				token: data.token
+			}
+		});
 		return token.create({
 			data: {
 				user_id: data.user_id,
@@ -15,10 +21,10 @@ export default class controller {
 		});
 	}
 
-	static async read(id: number): Promise<Token | Token[] | null> {
+	static async read(user_id: number): Promise<Token | Token[] | null> {
 		return token.findMany({
 			where: {
-				id
+				user_id
 			}
 		});
 	}
@@ -28,10 +34,13 @@ export default class controller {
 			return null;
 		return token.update({
 			where: {
-				id: data.id
+				user_id_token: {
+					user_id: data.user_id,
+					token: data.token
+				}
 			},
 			data: {
-				id: data.id,
+				user_id: data.user_id,
 				token: data.token,
 				is_invalid: data.is_invalid,
 				deadline: data.deadline
@@ -39,10 +48,13 @@ export default class controller {
 		});
 	}
 
-	static async delete(id: number): Promise<Token> {
+	static async delete(user_id: number, token_data: string): Promise<Token> {
 		return token.delete({
 			where: {
-				id
+				user_id_token: {
+					user_id,
+					token: token_data
+				}
 			}
 		});
 	}
@@ -65,9 +77,9 @@ export default class controller {
 		if (tokens) {
 			if (Array.isArray(tokens)) {
 				for (const token of tokens)
-					this.update({ id: token.id, user_id: token.user_id, token: token.token, is_invalid: true, deadline: token.deadline });
+					this.update({ user_id: token.user_id, token: token.token, is_invalid: true, deadline: token.deadline });
 			} else
-				this.update({ id: tokens.id, user_id: tokens.user_id, token: tokens.token, is_invalid: true, deadline: tokens.deadline });
+				this.update({ user_id: tokens.user_id, token: tokens.token, is_invalid: true, deadline: tokens.deadline });
 		}
 	}
 
