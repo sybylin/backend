@@ -41,6 +41,8 @@ import type { Application, NextFunction, Request, Response } from 'express';
 		methods: ['DELETE', 'HEAD', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT'],
 		origin: ['http://localhost:3000', 'http://localhost:9100']
 	}));
+	app.use(compression());
+	app.use(ExpressLog);
 	app.use('/favicon.ico', favicon);
 	app.use((req, res, next) => {
 		const ext = extname(req.path);
@@ -56,8 +58,6 @@ import type { Application, NextFunction, Request, Response } from 'express';
 		next();
 	});
 	routes(app);
-	app.use(compression());
-	app.use(ExpressLog);
 	app.listen(PORT, (): void => {
 		console.log(`server is running at ${PORT}`);
 	});

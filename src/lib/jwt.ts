@@ -1,22 +1,13 @@
 import { randomBytes } from 'crypto';
 import jwt from 'jsonwebtoken';
-import UserController from 'database/user/controller';
+import UserController, { CleanUser } from 'database/user/controller';
 import TokenController from 'database/token/controller';
 import type { Request, Response, NextFunction } from 'express';
-import { User } from '@prisma/client';
-import { error } from '@/code/format';
 import getInfo from '@/code';
 
 import { Role } from '@/routes/user/interface';
-
-export type token = Record<'token' | 'xsrf' | 'remember', string | boolean>;
-export type tokenContent = Record<'id' | 'name' | 'xsrfToken', string | number>
-enum jwtToken {
-	unauthorized = 1,
-	forceLogout,
-	noUser,
-	invalidToken
-}
+import { jwtToken } from './jwtInterface';
+import type { token } from './jwtInterface';
 
 export const JWT_COOKIE_NAME = 'access_token';
 export const REMEMBER_COOKIE_NAME = 'remember_me';
@@ -92,29 +83,33 @@ export const sendCookieToResponse = (res: Response, jwtToken: token): void => {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const forceLogout = (_req: Request, res: Response, _next: NextFunction): void => {
+export const forceLogout = (_req: Request, res: Response, next: NextFunction): void => {
 	res
 		.clearCookie(JWT_COOKIE_NAME)
 		.clearCookie(REMEMBER_COOKIE_NAME)
-		.status(204);
+		.status(204)
+		.send();
 };
 
 export class jwtMiddleware {
-	private static async verifyJwt(xsrfTokenReq: string, authHeader: string): Promise<User> {
+	private static async verifyJwt(xsrfTokenReq: string, authHeader: string, userIsPresent = false): Promise<CleanUser | void> {
 		return new Promise((res, rej) => {
 			if (!xsrfTokenReq || !authHeader)
 				return rej(jwtToken.unauthorized);
 			jwt.verify(authHeader, JWT_TOKEN, async (err: any, decoded: any) => {
 				if (err || !decoded || !decoded.name || decoded.xsrfToken !== xsrfTokenReq)
 					return rej(jwtToken.forceLogout);
-				const tokenIsValid = await TokenController.tokenIsValid(authHeader);
-				const user = await UserController.findOne(decoded.name);
 
-				if (!user)
-					return rej(jwtToken.noUser);
+				const tokenIsValid = await TokenController.tokenIsValid(authHeader);
 				if (!tokenIsValid)
 					return rej(jwtToken.invalidToken);
-				return res(user);
+				if (!userIsPresent) {
+					const user = await UserController.cleanFindOne(decoded.name);
+					if (!user)
+						return rej(jwtToken.noUser);
+					return res(user);
+				}
+				return res();
 			});
 		});
 	}
@@ -122,17 +117,17 @@ export class jwtMiddleware {
 	private static async base(req: Request, res: Response, next: NextFunction): Promise<void> {
 		const user = await this.verifyJwt(
 			req.headers['x-xsrf-token'] as string,
-			req.cookies[JWT_COOKIE_NAME]
+			req.cookies[JWT_COOKIE_NAME],
+			!!req.user
 		)
 			.catch((e: jwtToken) => {
 				if (e === jwtToken.forceLogout)
-					return forceLogout(req, res, next);
+					forceLogout(req, res, next);
 				else
-					return error(req, res, 'JW_001');
+					next(new Error(getInfo('JW_001').message));
 			});
-		if (!user)
-			return next(new Error(getInfo('GE_001').message));
-		req.user = user;
+		if (!req.user)
+			req.user = user as CleanUser;
 	}
 
 	/**
@@ -148,7 +143,7 @@ export class jwtMiddleware {
 			req.user.role === Role.ADMINISTRATOR
 		)
 			return next();
-		return error(req, res, 'JW_002');
+		return next(new Error(getInfo('JW_002').message));
 	}
 
 	/**
@@ -163,7 +158,7 @@ export class jwtMiddleware {
 			req.user.role === Role.ADMINISTRATOR
 		)
 			return next();
-		return error(req, res, 'JW_002');
+		return next(new Error(getInfo('JW_002').message));
 	}
 
 	/**
@@ -175,6 +170,6 @@ export class jwtMiddleware {
 			return next(new Error(getInfo('GE_001').message));
 		if (req.user.role === Role.ADMINISTRATOR)
 			return next();
-		return error(req, res, 'JW_002');
+		return next(new Error(getInfo('JW_002').message));
 	}
 }

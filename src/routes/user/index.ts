@@ -16,7 +16,8 @@ import type { UserRequest } from './interface';
 
 class accountCRUD {
 	static async create(req: UserRequest, res: Response<any>, next: NextFunction) {
-		verifyRequest(req, res, false, true);
+		if (verifyRequest(req, res, true, true))
+			return next();
 		const mail = normalizeEmail(req.body.email);
 		if (mail === false)
 			return error(req, res, 'US_004');
@@ -39,15 +40,15 @@ class accountCRUD {
 				} else
 					next(e);
 			});
-		if (!account)
+
+		if (!account || typeof account === 'boolean')
 			return next(new Error(getInfo('GE_003').message));
 		await mailSystem.accountVerification(mail, { token: token.token.toString() })
 			.catch(() => next(new Error(getInfo('GE_002').message)));
+
 		return success(req, res, 'US_104', {
 			data: {
 				user: {
-					name: account.name,
-					email: account.email,
 					verify: false,
 					timestamp: new Date().getTime()
 				}
@@ -55,9 +56,9 @@ class accountCRUD {
 		});
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	static async read(req: UserRequest, res: Response<any>, _next: NextFunction) {
-		verifyRequest(req, res, false, false);
+	static async read(req: UserRequest, res: Response<any>, next: NextFunction) {
+		if (verifyRequest(req, res, false, false))
+			return next();
 		return success(req, res, 'US_107', {
 			data: {
 				...(await UserController.cleanFindOne(req.body.name))
@@ -66,7 +67,8 @@ class accountCRUD {
 	}
 
 	static async update(req: UserRequest, res: Response<any>, next: NextFunction) {
-		verifyRequest(req, res, true, true);
+		if (verifyRequest(req, res, true, true))
+			return next();
 		const mail = normalizeEmail(req.body.email);
 		if (mail === false)
 			return error(req, res, 'US_004');
@@ -110,11 +112,12 @@ class accountCRUD {
 	}
 
 	static async delete(req: UserRequest, res: Response<any>, next: NextFunction) {
-		verifyRequest(req, res, true, false);
+		if (verifyRequest(req, res, true, false))
+			return next();
 		const accountCheck = await UserController.check(req.body.name, req.body.password)
 			.catch((e) => next(e));
 		if (!accountCheck)
-			return error(req, res, ('US_001'));
+			return error(req, res, 'US_001');
 		await UserController.delete(req.body.name)
 			.catch((e) => next(e));
 		return success(req, res, 'US_106', { data: { name: req.body.name } });
@@ -140,7 +143,8 @@ class account extends accountCRUD {
 	}
 
 	static async checkUser(req: UserRequest, res: Response<any>, next: NextFunction) {
-		verifyRequest(req, res, true, false);
+		if (verifyRequest(req, res, true, false))
+			return next();
 		const check = await UserController.check(req.body.name, req.body.password)
 			.catch(() => next(new Error(getInfo('GE_001').message)));
 		if (check === null || check === false) {
@@ -173,7 +177,8 @@ class account extends accountCRUD {
 	}
 
 	static async token(req: UserRequest, res: Response<any>, next: NextFunction) {
-		verifyRequest(req, res, false, false);
+		if (verifyRequest(req, res, false, false))
+			return next();
 		if (!req.body.token) {
 			const user = await UserController.findOne(req.body.name)
 				.catch(() => next(new Error(getInfo('GE_001').message)));
@@ -201,7 +206,7 @@ class account extends accountCRUD {
 			if (isEmpty(String(req.body.token)))
 				return error(req, res, 'RE_002', { data: { key: 'token' } });
 			if (!isNumeric(String(req.body.token)) || String(req.body.token).length !== 8)
-				return error(req, res, 'RE_007');
+				return error(req, res, 'US_008');
 			const user = await UserController.findOne(req.body.name)
 				.catch(() => next(new Error(getInfo('GE_001').message)));
 			if (!user || user.verify) {
@@ -239,7 +244,8 @@ class account extends accountCRUD {
 	}
 
 	static async updateRole(req: UserRequest, res: Response<any>, next: NextFunction) {
-		verifyRequest(req, res, false, false);
+		if (verifyRequest(req, res, false, false))
+			return next();
 		if (!req.body.role || isEmpty(req.body.role) || !isString(req.body.role))
 			return error(req, res, 'RE_002', { data: { key: 'role' } });
 

@@ -3,20 +3,19 @@ import { user } from 'database/db.instance';
 import { User } from '@prisma/client';
 import type { Role } from '@/routes/user/interface';
 
-interface CleanUser {
+export interface CleanUser {
 	id: number;
   name: string;
+	role: Role,
   avatar: string | null;
   verify: boolean | null;
-  creation_date: Date | null;
-  modification_date: Date | null;
 }
 
 export default class controller {
-	static async create(data: Omit<User, 'id' | 'avatar' | 'creation_date' | 'modification_date'>): Promise<User | null | never> {
+	static async create(data: Omit<User, 'id' | 'avatar' | 'creation_date' | 'modification_date'>): Promise<{ name: string, email: string } | null> {
 		if (!data.name || !data.email || !data.password)
 			return null;
-		return user.create({
+		return await user.create({
 			data: {
 				name: data.name,
 				email: data.email,
@@ -25,6 +24,10 @@ export default class controller {
 				verify: data.verify,
 				token: data.token,
 				token_deadline: data.token_deadline
+			},
+			select: {
+				name: true,
+				email: true
 			}
 		});
 	}
@@ -45,10 +48,9 @@ export default class controller {
 			select: {
 				id: true,
 				name: true,
+				role: true,
 				avatar: true,
-				verify: true,
-				creation_date: true,
-				modification_date: true
+				verify: true
 			}
 		});
 	}
@@ -67,10 +69,9 @@ export default class controller {
 			select: {
 				id: true,
 				name: true,
+				role: true,
 				avatar: true,
 				verify: true,
-				creation_date: true,
-				modification_date: true
 			},
 			skip,
 			take: (page)

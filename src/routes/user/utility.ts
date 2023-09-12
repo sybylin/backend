@@ -12,21 +12,22 @@ export const verifyRequest = (
 	res: Response<any>,
 	checkPass = true,
 	checkMail = false
-): void => {
+): boolean => {
 	if (!Object.keys(req.body).length)
 		return error(req, res, 'RE_001');
-	if (!req.body.name || isEmpty(req.body.name) || !isString(req.body.name))
+	if (!req.body.name || !isString(req.body.name) || isEmpty(req.body.name))
 		return error(req, res, 'RE_002', { data: { key: 'name' } });
 	if (checkPass) {
-		if (!req.body.password || isEmpty(req.body.password) || !isString(req.body.password))
+		if (!req.body.password || !isString(req.body.password) || isEmpty(req.body.password))
 			return error(req, res, 'RE_002', { data: { key: 'password' } });
 	}
 	if (checkMail) {
-		if (!req.body.email || isEmpty(req.body.email) || !isString(req.body.email))
+		if (!req.body.email || !isString(req.body.email) || isEmpty(req.body.email))
 			return error(req, res, 'RE_002', { data: { key: 'email' } });
 		if (!isEmail(req.body.email))
 			return error(req, res, 'US_005');
 	}
+	return false;
 };
 
 export const generateToken = (): { token: number; deadline: Date; } => {

@@ -29,11 +29,13 @@ const verifyData = (req: Request<any>, res: Response<any>, verify = '0000') => {
 		return error(req, res, 'RE_002', { data: { key: 'user_id' } });
 	if (verify[3] === '1' && (!req.body.solution || isEmpty(req.body.solution) || !isNumeric(req.body.solution)))
 		return error(req, res, 'RE_002', { data: { key: 'solution' } });
+	return false;
 };
 
 class enigma {
 	static get(req: Request<any>, res: Response<any>, next: NextFunction) {
-		verifyData(req, res, '1000');
+		if (verifyData(req, res, '1000'))
+			return next();
 		EnigmaController.findOne(Number(req.body.id))
 			.then((d) => {
 				if (!d)
@@ -48,7 +50,8 @@ class enigma {
 	}
 
 	static async update(req: Request<any>, res: Response<any>, next: NextFunction) {
-		verifyData(req, res, '1000');
+		if (verifyData(req, res, '1000'))
+			return next();
 		const enigma = await EnigmaController.findOne(req.body.id);
 		if (enigma) {
 			EnigmaController.update({
@@ -66,14 +69,16 @@ class enigma {
 	}
 
 	static async delete(req: Request<any>, res: Response<any>, next: NextFunction) {
-		verifyData(req, res, '1000');
+		if (verifyData(req, res, '1000'))
+			return next();
 		EnigmaController.delete(req.body.id)
-			.then(() => success(req, res,'AC_106'))
+			.then(() => success(req, res, 'AC_106'))
 			.catch(() => next(new Error(getInfo('GE_002').message)));
 	}
 
 	static getAllOfSeries(req: Request<any>, res: Response<any>, next: NextFunction) {
-		verifyData(req, res, '0100');
+		if (verifyData(req, res, '0100'))
+			return next();
 		EnigmaController.findAll(Number(req.body.series_id))
 			.then((d) => {
 				if (!d)
@@ -88,7 +93,8 @@ class enigma {
 	}
 
 	static isFinished(req: Request<any>, res: Response<any>, next: NextFunction) {
-		verifyData(req, res, '1010');
+		if (verifyData(req, res, '1010'))
+			return next();
 		EnigmaFinishedController.isFinished(req.body.id, req.body.user_id)
 			.then((d) => {
 				if (!d)
@@ -103,7 +109,8 @@ class enigma {
 	}
 
 	static verifySolution(req: Request<any>, res: Response<any>, next: NextFunction) {
-		verifyData(req, res, '1001');
+		if (verifyData(req, res, '1001'))
+			return next();
 		EnigmaSolutionController.checkSolution(req.body.id, req.body.solution)
 			.then((d) => {
 				return success(req, res, 'EN_104', {

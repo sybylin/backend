@@ -29,7 +29,7 @@ interface ResetPasswordRequest extends Request {
 /**
  * Init reset password system, need to pass name and email of user
  */
-export const initPasswordReset = async (req: InitPasswordRequest, res: Response<any>, next: NextFunction): Promise<void> => {
+export const initPasswordReset = async (req: InitPasswordRequest, res: Response<any>, next: NextFunction): Promise<boolean> => {
 	if (!Object.keys(req.body).length)
 		return error(req, res, 'RE_001');
 	if (!req.body.name || isEmpty(req.body.name))
@@ -58,17 +58,17 @@ export const initPasswordReset = async (req: InitPasswordRequest, res: Response<
 				: `http://localhost:9100/reset/${token}`
 		})
 			.catch(() => next(new Error(getInfo('GE_002').message)));
-		return success(req, res, 'US_120', {
-			data: {
-				initPasswordReset: true
-			}
-		});
 	} catch (e) {
 		next(new Error(getInfo('GE_001').message));
 	}
+	return success(req, res, 'US_120', {
+		data: {
+			initPasswordReset: true
+		}
+	});
 };
 
-export const resetPassword = async (req: ResetPasswordRequest, res: Response<any>, next: NextFunction): Promise<void> => {
+export const resetPassword = async (req: ResetPasswordRequest, res: Response<any>, next: NextFunction): Promise<boolean> => {
 	if (!Object.keys(req.body).length)
 		return error(req, res, 'RE_001');
 	if (!req.body.token || isEmpty(req.body.token) || !isString(req.body.token))
@@ -98,8 +98,10 @@ export const resetPassword = async (req: ResetPasswordRequest, res: Response<any
 		}});
 	}
 	
-	if (!await UserController.updatePassword(userResetToken.user_id, req.body.password))
-		return next(new Error(getInfo('GE_001').message));
+	if (!await UserController.updatePassword(userResetToken.user_id, req.body.password)) {
+		next(new Error(getInfo('GE_001').message));
+		return true;
+	}
 
 	mail.passwordUpdate(userResetToken.user.email)
 		.catch(() => next(new Error(getInfo('GE_002').message)));

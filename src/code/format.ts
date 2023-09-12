@@ -2,7 +2,7 @@ import { log } from 'lib/log';
 import { sendCookieToResponse } from 'lib/jwt';
 import { getInfo } from './index';
 import type { Response, Request } from 'express';
-import type { token } from 'lib/jwt';
+import type { token } from 'lib/jwtInterface';
 
 interface formatOptions {
 	data?: Record<string, any>;
@@ -47,7 +47,6 @@ function resFormat(
 		sendCookieToResponse(res, jwt);
 		retObj['x-xsrf-token'] = jwt.xsrf;
 	}
-
 	res.status(statusCode).send(retObj);
 }
 
@@ -56,8 +55,9 @@ export function error(
 	res: Response<any>,
 	code: string,
 	options: formatOptions | undefined = undefined
-): void {
+): true {
 	resFormat(true, 400, req, res, code, options);
+	return true;
 }
 
 export function success(
@@ -66,6 +66,7 @@ export function success(
 	code: string,
 	options: formatOptions | undefined = undefined,
 	jwt?: token
-): void {
+): false {
 	resFormat(false, 200, req, res, code, options, jwt);
+	return false;
 }
