@@ -161,4 +161,19 @@ export default class controller {
 			}
 		})) !== null);
 	}
+
+	static async userRole(id: number): Promise<Role | null> {
+		const userRole = await user.findUnique({
+			where: {
+				id
+			},
+			select: {
+				role: true
+			}
+		});
+
+		if (!userRole)
+			return null;
+		return userRole.role as Role;
+	}
 }

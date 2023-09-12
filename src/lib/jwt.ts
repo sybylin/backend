@@ -109,7 +109,7 @@ export class jwtMiddleware {
 					return rej(jwtToken.forceLogout);
 				const tokenIsValid = await TokenController.tokenIsValid(authHeader);
 				const user = await UserController.findOne(decoded.name);
-		
+
 				if (!user)
 					return rej(jwtToken.noUser);
 				if (!tokenIsValid)
@@ -125,7 +125,7 @@ export class jwtMiddleware {
 			req.cookies[JWT_COOKIE_NAME]
 		)
 			.catch((e: jwtToken) => {
-				if (e === jwtToken.forceLogout || e === jwtToken.unauthorized)
+				if (e === jwtToken.forceLogout)
 					return forceLogout(req, res, next);
 				else
 					return error(req, res, 'JW_001');
@@ -136,10 +136,10 @@ export class jwtMiddleware {
 	}
 
 	/**
-	 * Only users with the USER, MODERATOR or ADMINISTRATOR tag will be accepted.
+	 * Only users with the USER, MODERATOR or ADMINISTRATOR role will be accepted.
 	 */
-	static acceptUser(req: Request, res: Response, next: NextFunction): void {
-		this.base(req, res, next);
+	static async acceptUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+		await this.base(req, res, next);
 		if (!req.user)
 			return next(new Error(getInfo('GE_001').message));
 		if (
@@ -152,10 +152,10 @@ export class jwtMiddleware {
 	}
 
 	/**
-	 * Only users with the MODERATOR or ADMINISTRATOR tag will be accepted.
+	 * Only users with the MODERATOR or ADMINISTRATOR role will be accepted.
 	 */
-	static acceptModerator(req: Request, res: Response, next: NextFunction): void {
-		this.base(req, res, next);
+	static async acceptModerator(req: Request, res: Response, next: NextFunction): Promise<void> {
+		await this.base(req, res, next);
 		if (!req.user)
 			return next(new Error(getInfo('GE_001').message));
 		if (
@@ -167,10 +167,10 @@ export class jwtMiddleware {
 	}
 
 	/**
-	 * Only users with the ADMINISTRATOR tag will be accepted.
+	 * Only users with the ADMINISTRATOR role will be accepted.
 	 */
-	static acceptAdministrator(req: Request, res: Response, next: NextFunction): void {
-		this.base(req, res, next);
+	static async acceptAdministrator(req: Request, res: Response, next: NextFunction): Promise<void> {
+		await this.base(req, res, next);
 		if (!req.user)
 			return next(new Error(getInfo('GE_001').message));
 		if (req.user.role === Role.ADMINISTRATOR)
