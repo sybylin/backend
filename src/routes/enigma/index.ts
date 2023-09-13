@@ -6,7 +6,7 @@ import EnigmaController from 'database/enigma/controller';
 import EnigmaFinishedController from 'database/enigmaFinished/controller';
 import EnigmaSolutionController from 'database/enigmaSolution/controller';
 import { getInfo } from 'code/index';
-import { error, success } from 'code/format';
+import { error, returnFormat, success } from 'code/format';
 import { jwtMiddleware } from 'lib/jwt';
 
 import type { NextFunction, Request, Response } from 'express';
@@ -18,7 +18,7 @@ import type { NextFunction, Request, Response } from 'express';
  * 3- userID
  * 4- solution
  */
-const verifyData = (req: Request<any>, res: Response<any>, verify = '0000') => {
+const verifyData = (req: Request<any>, res: Response<any>, verify = '0000'): returnFormat | null => {
 	if (!Object.keys(req.body).length)
 		return error(req, res, 'RE_001');
 	if (verify[0] === '1' && (!req.body.id || isEmpty(req.body.id) || !isNumeric(req.body.id)))
@@ -29,29 +29,31 @@ const verifyData = (req: Request<any>, res: Response<any>, verify = '0000') => {
 		return error(req, res, 'RE_002', { data: { key: 'user_id' } });
 	if (verify[3] === '1' && (!req.body.solution || isEmpty(req.body.solution) || !isNumeric(req.body.solution)))
 		return error(req, res, 'RE_002', { data: { key: 'solution' } });
-	return false;
+	return null;
 };
 
 class enigma {
 	static get(req: Request<any>, res: Response<any>, next: NextFunction) {
-		if (verifyData(req, res, '1000'))
-			return next();
+		const hasError = verifyData(req, res, '1000');
+		if (hasError)
+			return hasError.res;
 		EnigmaController.findOne(Number(req.body.id))
 			.then((d) => {
 				if (!d)
-					return error(req, res, 'EN_001');
+					return error(req, res, 'EN_001').res;
 				return success(req, res, 'EN_101', {
 					data: {
 						...d
 					}
-				});
+				}).res;
 			})
 			.catch(() => next(new Error(getInfo('GE_001').message)));
 	}
 
 	static async update(req: Request<any>, res: Response<any>, next: NextFunction) {
-		if (verifyData(req, res, '1000'))
-			return next();
+		const hasError = verifyData(req, res, '1000');
+		if (hasError)
+			return hasError.res;
 		const enigma = await EnigmaController.findOne(req.body.id);
 		if (enigma) {
 			EnigmaController.update({
@@ -69,55 +71,61 @@ class enigma {
 	}
 
 	static async delete(req: Request<any>, res: Response<any>, next: NextFunction) {
-		if (verifyData(req, res, '1000'))
-			return next();
+		const hasError = verifyData(req, res, '1000');
+		if (hasError)
+			return hasError.res;
 		EnigmaController.delete(req.body.id)
-			.then(() => success(req, res, 'AC_106'))
+			.then(() => success(req, res, 'AC_106').res)
 			.catch(() => next(new Error(getInfo('GE_002').message)));
 	}
 
 	static getAllOfSeries(req: Request<any>, res: Response<any>, next: NextFunction) {
-		if (verifyData(req, res, '0100'))
-			return next();
+		const hasError = verifyData(req, res, '0100');
+		if (hasError)
+			return hasError.res;
 		EnigmaController.findAll(Number(req.body.series_id))
 			.then((d) => {
 				if (!d)
-					return error(req, res, 'EN_001');
+					return error(req, res, 'EN_001').res;
 				return success(req, res, 'EN_102', {
 					data: {
 						...d
 					}
-				});
+				}).res;
 			})
 			.catch(() => next(new Error(getInfo('GE_001').message)));
 	}
 
 	static isFinished(req: Request<any>, res: Response<any>, next: NextFunction) {
-		if (verifyData(req, res, '1010'))
-			return next();
+		const hasError = verifyData(req, res, '1010');
+		if (hasError)
+			return hasError.res;
+
 		EnigmaFinishedController.isFinished(req.body.id, req.body.user_id)
 			.then((d) => {
 				if (!d)
-					return error(req, res, 'EN_002');
+					return error(req, res, 'EN_002').res;
 				return success(req, res, 'EN_103', {
 					data: {
 						isFinished: d
 					}
-				});
+				}).res;
 			})
 			.catch(() => next(new Error(getInfo('GE_001').message)));
 	}
 
 	static verifySolution(req: Request<any>, res: Response<any>, next: NextFunction) {
-		if (verifyData(req, res, '1001'))
-			return next();
+		const hasError = verifyData(req, res, '1001');
+		if (hasError)
+			return hasError.res;
+
 		EnigmaSolutionController.checkSolution(req.body.id, req.body.solution)
 			.then((d) => {
 				return success(req, res, 'EN_104', {
 					data: {
 						isCorrect: d
 					}
-				});
+				}).res;
 			})
 			.catch(() => next(new Error(getInfo('GE_001').message)));
 	}

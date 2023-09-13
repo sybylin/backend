@@ -2,7 +2,7 @@ import { randomInt } from 'crypto';
 import isEmail from 'validator/lib/isEmail';
 import isEmpty from 'validator/lib/isEmpty';
 import { isString } from 'lodash';
-import { error } from 'code/format';
+import { error, returnFormat } from 'code/format';
 
 import type { Response } from 'express';
 import type { UserRequest } from './interface';
@@ -12,7 +12,7 @@ export const verifyRequest = (
 	res: Response<any>,
 	checkPass = true,
 	checkMail = false
-): boolean => {
+): returnFormat | null => {
 	if (!Object.keys(req.body).length)
 		return error(req, res, 'RE_001');
 	if (!req.body.name || !isString(req.body.name) || isEmpty(req.body.name))
@@ -27,7 +27,7 @@ export const verifyRequest = (
 		if (!isEmail(req.body.email))
 			return error(req, res, 'US_005');
 	}
-	return false;
+	return null;
 };
 
 export const generateToken = (): { token: number; deadline: Date; } => {

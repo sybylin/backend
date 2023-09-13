@@ -29,19 +29,19 @@ interface ResetPasswordRequest extends Request {
 /**
  * Init reset password system, need to pass name and email of user
  */
-export const initPasswordReset = async (req: InitPasswordRequest, res: Response<any>, next: NextFunction): Promise<boolean> => {
+export const initPasswordReset = async (req: InitPasswordRequest, res: Response<any>, next: NextFunction): Promise<Response<any, Record<string, any>>> => {
 	if (!Object.keys(req.body).length)
-		return error(req, res, 'RE_001');
+		return error(req, res, 'RE_001').res;
 	if (!req.body.name || isEmpty(req.body.name))
-		return error(req, res, 'RE_002', { data: { key: 'name' } });
+		return error(req, res, 'RE_002', { data: { key: 'name' } }).res;
 	if (!req.body.email || isEmpty(req.body.email) || !isEmail(req.body.email))
-		return error(req, res, 'RE_002', { data: { key: 'email' } });
+		return error(req, res, 'RE_002', { data: { key: 'email' } }).res;
 	try {
 		const user = await UserController.findOne(req.body.name);
 		if (!user)
-			return error(req, res, 'US_001');
+			return error(req, res, 'US_001').res;
 		if (user.email.localeCompare(normalizeEmail(req.body.email).toString()) !== 0)
-			return error(req, res, 'US_005');
+			return error(req, res, 'US_005').res;
 		const token = randomBytes(128).toString('base64url');
 		const deadline = new Date();
 		deadline.setTime(new Date().getTime() + 900000);
@@ -51,7 +51,7 @@ export const initPasswordReset = async (req: InitPasswordRequest, res: Response<
 			token
 		});
 		if (!userReset)
-			return error(req, res, 'US_020');
+			return error(req, res, 'US_020').res;
 		mail.resetPassword(user.email, {
 			url: (process.env.NODE_ENV === 'production')
 				? `https://sibyllin.app/reset/${token}`
@@ -65,18 +65,18 @@ export const initPasswordReset = async (req: InitPasswordRequest, res: Response<
 		data: {
 			initPasswordReset: true
 		}
-	});
+	}).res;
 };
 
-export const resetPassword = async (req: ResetPasswordRequest, res: Response<any>, next: NextFunction): Promise<boolean> => {
+export const resetPassword = async (req: ResetPasswordRequest, res: Response<any>, next: NextFunction): Promise<Response<any, Record<string, any>>> => {
 	if (!Object.keys(req.body).length)
-		return error(req, res, 'RE_001');
+		return error(req, res, 'RE_001').res;
 	if (!req.body.token || isEmpty(req.body.token) || !isString(req.body.token))
-		return error(req, res, 'RE_002', { data: { key: 'token' } });
+		return error(req, res, 'RE_002', { data: { key: 'token' } }).res;
 	if (!req.body.password || isEmpty(req.body.password) || !isString(req.body.password))
-		return error(req, res, 'RE_002', { data: { key: 'password' } });
+		return error(req, res, 'RE_002', { data: { key: 'password' } }).res;
 	if (!req.body.repeatPassword || isEmpty(req.body.repeatPassword) || !isString(req.body.repeatPassword))
-		return error(req, res, 'RE_002', { data: { key: 'repeatPassword' } });
+		return error(req, res, 'RE_002', { data: { key: 'repeatPassword' } }).res;
 	
 	let userResetToken = await UserResetPassword.findByToken(req.body.token);
 	const currentDate = new Date().getTime();
@@ -89,19 +89,17 @@ export const resetPassword = async (req: ResetPasswordRequest, res: Response<any
 	if (!userResetToken) {
 		return error(req, res, 'US_022', { data: {
 			resetTokenIsInvalid: true
-		}});
+		}}).res;
 	}
 
 	if ((req.body.password as string).localeCompare(req.body.repeatPassword) !== 0) {
 		return error(req, res, 'US_002', { data: {
 			differentPassword: true
-		}});
+		}}).res;
 	}
 	
-	if (!await UserController.updatePassword(userResetToken.user_id, req.body.password)) {
-		next(new Error(getInfo('GE_001').message));
-		return true;
-	}
+	if (!await UserController.updatePassword(userResetToken.user_id, req.body.password))
+		return error(req, res, 'GE_001').res;
 
 	mail.passwordUpdate(userResetToken.user.email)
 		.catch(() => next(new Error(getInfo('GE_002').message)));
@@ -111,5 +109,5 @@ export const resetPassword = async (req: ResetPasswordRequest, res: Response<any
 		data: {
 			passwordResetSuccess: true
 		}
-	});
+	}).res;
 };

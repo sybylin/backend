@@ -9,6 +9,7 @@ interface formatOptions {
 	lang?: string; // [en_us, fr_fr]
 	status?: number; // response HTTP code
 }
+export type returnFormat = { error: boolean, res: Response<any, Record<string, any>> };
 
 function getLang(req: Request<any>, options: formatOptions | undefined) {
 	const parse = (str: string) => String(str).toLowerCase().replaceAll(/[_/\\]/g, '-');
@@ -47,7 +48,7 @@ function resFormat(
 		sendCookieToResponse(res, jwt);
 		retObj['x-xsrf-token'] = jwt.xsrf;
 	}
-	res.status(statusCode).send(retObj);
+	return res.status(statusCode).send(retObj);
 }
 
 export function error(
@@ -55,9 +56,8 @@ export function error(
 	res: Response<any>,
 	code: string,
 	options: formatOptions | undefined = undefined
-): true {
-	resFormat(true, 400, req, res, code, options);
-	return true;
+): { error: true, res: Response<any, Record<string, any>> } {
+	return { error: true, res: resFormat(true, 400, req, res, code, options) };
 }
 
 export function success(
@@ -66,7 +66,6 @@ export function success(
 	code: string,
 	options: formatOptions | undefined = undefined,
 	jwt?: token
-): false {
-	resFormat(false, 200, req, res, code, options, jwt);
-	return false;
+): { error: false, res: Response<any, Record<string, any>> } {
+	return { error: false, res: resFormat(false, 200, req, res, code, options, jwt) };
 }

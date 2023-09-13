@@ -8,8 +8,8 @@ const successfulIdentification = (
 	req: Request<any>,
 	res: Response<any>,
 	_next: NextFunction // eslint-disable-line @typescript-eslint/no-unused-vars
-): boolean => {
-	return success(req, res, 'JW_101');
+) => {
+	return success(req, res, 'JW_101').res;
 };
 
 export default Router()
