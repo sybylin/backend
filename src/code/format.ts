@@ -1,5 +1,5 @@
 import { log } from 'lib/log';
-import { sendCookieToResponse } from 'lib/jwt';
+import sendCookieToResponse from 'lib/jwtSendCookie';
 import { getInfo } from './index';
 import type { Response, Request } from 'express';
 import type { token } from 'lib/jwtInterface';
