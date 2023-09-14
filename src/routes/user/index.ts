@@ -8,6 +8,7 @@ import { error, success } from 'code/format';
 import { JWT_COOKIE_NAME, generateJwtToken, jwtMiddleware } from 'lib/jwt';
 import mailSystem from 'lib/mail';
 import { log } from 'lib/log';
+import TokenController from 'database/token/controller';
 import UserController from 'database/user/controller';
 import { enumCheckUser } from 'database/user/controller';
 import { verifyRequest, generateToken } from './utility';
@@ -251,8 +252,13 @@ class account extends accountCRUD {
 		}
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	static async logout(_req: UserRequest, res: Response<any>, _next: NextFunction) {
+	static async logout(req: UserRequest, res: Response<any>, next: NextFunction) {
+		const authHeader = req.cookies[JWT_COOKIE_NAME] as string;
+
+		if (authHeader) {
+			await TokenController.invalidateToken(authHeader)
+				.catch(() => next(new Error(getInfo('GE_001').message)));
+		}
 		return res
 			.clearCookie(JWT_COOKIE_NAME)
 			.status(200)
