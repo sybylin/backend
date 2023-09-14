@@ -67,11 +67,17 @@ export const sendCookieToResponse = (res: Response, jwtToken: token): void => {
 	});
 };
 
-export const forceLogout = (res: Response): Response<any, Record<string, any>> => {
+export const forceLogout = (req: Request, res: Response): Response<any, Record<string, any>> => {
+	const authHeader = req.cookies[JWT_COOKIE_NAME] as string;
+
+	if (authHeader) {
+		TokenController.invalidateToken(authHeader)
+			.catch(() => log.error('TokenController.invalidateToken failed'));
+	}
 	return res
 		.clearCookie(JWT_COOKIE_NAME)
 		.status(204)
-		.send();
+		.send({ logout: true });
 };
 
 const verifyJwt = async (req: Request, res: Response):
@@ -86,7 +92,7 @@ const verifyJwt = async (req: Request, res: Response):
 			return resolve(genError());
 		jwt.verify(authHeader, JWT_TOKEN, async (err: any, decoded: any) => {
 			if (err || !decoded || !decoded.name || decoded.xsrfToken !== xsrfTokenReq)
-				return resolve({ error: true, logout: true, res: forceLogout(res) });
+				return resolve({ error: true, logout: true, res: forceLogout(req, res) });
 	
 			const tokenIsValid = await TokenController.tokenIsValid(authHeader);
 			if (!tokenIsValid)
