@@ -34,10 +34,13 @@ export const initPasswordReset = async (req: InitPasswordRequest, res: Response<
 	if (!req.body.email || isEmpty(req.body.email) || !isEmail(req.body.email))
 		return error(req, res, 'RE_002', { data: { key: 'email' } }).res;
 	try {
-		const user = await UserController.findByEmail(req.body.email);
+		const norm = normalizeEmail(req.body.email);
+		if (!norm)
+			return error(req, res, 'US_005').res;
+		const user = await UserController.findByEmail(norm);
 		if (!user)
 			return error(req, res, 'US_001').res;
-		if (user.email.localeCompare(normalizeEmail(req.body.email).toString()) !== 0)
+		if (user.email.localeCompare(norm) !== 0)
 			return error(req, res, 'US_005').res;
 		const token = randomBytes(128).toString('base64url');
 		const deadline = new Date();

@@ -150,6 +150,9 @@ export default class controller {
 			},
 			data: {
 				password: await argon2.hash(new_password)
+			},
+			select: {
+				id: true
 			}
 		});
 
@@ -163,6 +166,9 @@ export default class controller {
 				: { name: idOrName },
 			data: {
 				role: new_role
+			},
+			select: {
+				id: true
 			}
 		});
 
