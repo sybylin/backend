@@ -13,7 +13,6 @@ import { isString } from 'lodash';
 
 interface InitPasswordRequest extends Request {
 	body: {
-		name: string;
 		email: string;
 	}
 }
@@ -32,12 +31,10 @@ interface ResetPasswordRequest extends Request {
 export const initPasswordReset = async (req: InitPasswordRequest, res: Response<any>, next: NextFunction): Promise<Response<any, Record<string, any>>> => {
 	if (!Object.keys(req.body).length)
 		return error(req, res, 'RE_001').res;
-	if (!req.body.name || isEmpty(req.body.name))
-		return error(req, res, 'RE_002', { data: { key: 'name' } }).res;
 	if (!req.body.email || isEmpty(req.body.email) || !isEmail(req.body.email))
 		return error(req, res, 'RE_002', { data: { key: 'email' } }).res;
 	try {
-		const user = await UserController.findOne(req.body.name);
+		const user = await UserController.findByEmail(req.body.email);
 		if (!user)
 			return error(req, res, 'US_001').res;
 		if (user.email.localeCompare(normalizeEmail(req.body.email).toString()) !== 0)
@@ -54,8 +51,8 @@ export const initPasswordReset = async (req: InitPasswordRequest, res: Response<
 			return error(req, res, 'US_020').res;
 		mail.resetPassword(user.email, {
 			url: (process.env.NODE_ENV === 'production')
-				? `https://sibyllin.app/reset/${token}`
-				: `http://localhost:9100/reset/${token}`
+				? `https://sibyllin.app/user/reset/${token}`
+				: `http://localhost:9100/user/reset/${token}`
 		})
 			.catch(() => next(new Error(getInfo('GE_002').message)));
 	} catch (e) {

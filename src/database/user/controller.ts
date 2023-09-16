@@ -43,7 +43,15 @@ export default class controller {
 		return user.findUnique({
 			where: (typeof nameOrId === 'number')
 				? { id: nameOrId }
-				: { name: nameOrId }
+				: { name: nameOrId },
+		});
+	}
+
+	static findByEmail(email: string): Promise<User | null> {
+		return user.findUnique({
+			where: {
+				email
+			}
 		});
 	}
 
