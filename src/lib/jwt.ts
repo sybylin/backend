@@ -90,7 +90,6 @@ const verifyJwt = async (req: Request, res: Response):
 			return resolve(null);
 		});
 	});
-	
 };
 
 export class jwtMiddleware {

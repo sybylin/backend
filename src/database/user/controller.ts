@@ -9,6 +9,7 @@ export interface CleanUser {
 	role: Role,
   avatar: string | null;
   verify: boolean | null;
+	creation_date: Date | null;
 }
 
 export enum enumCheckUser {
@@ -65,7 +66,8 @@ export default class controller {
 				name: true,
 				role: true,
 				avatar: true,
-				verify: true
+				verify: true,
+				creation_date: true
 			}
 		});
 	}
@@ -87,6 +89,7 @@ export default class controller {
 				role: true,
 				avatar: true,
 				verify: true,
+				creation_date: true
 			},
 			skip,
 			take: (page)

@@ -152,6 +152,18 @@ class account extends accountCRUD {
 		}).res;
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	static async getHisInfo(req: UserRequest, res: Response<any>, _next: NextFunction) {
+		if (req.user) {
+			return success(req, res, 'US_107', {
+				data: {
+					user: req.user
+				}
+			});
+		}
+		return error(req, res, 'US_001');
+	}
+
 	static async checkUser(req: UserRequest, res: Response<any>, next: NextFunction) {
 		const hasError = verifyRequest(req, res, true, false);
 		if (hasError)
@@ -286,6 +298,7 @@ class account extends accountCRUD {
 export default Router()
 	.get('/logout', jwtMiddleware.acceptUser, account.logout)
 	.get('/user/:name', jwtMiddleware.acceptUser, account.getUser)
+	.get('/', jwtMiddleware.acceptUser, account.getHisInfo)
 
 	.post('/create', account.create)
 	.post('/check', account.checkUser)
