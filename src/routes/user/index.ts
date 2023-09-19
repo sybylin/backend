@@ -17,6 +17,7 @@ import { initPasswordReset, resetPassword } from './resetPassword';
 
 import type { NextFunction, Response } from 'express';
 import type { UserRequest } from './interface';
+import { checkAchievement } from '@/achievement';
 
 class accountCRUD {
 	static async create(req: UserRequest, res: Response<any>, next: NextFunction) {
@@ -33,6 +34,7 @@ class accountCRUD {
 			role: 'USER',
 			password: req.body.password as string,
 			verify: false,
+			last_connection: null,
 			token: token.token,
 			token_deadline: token.deadline
 		})
@@ -101,6 +103,7 @@ class accountCRUD {
 			name: req.body.name,
 			email: mail ?? user.email,
 			verify: !(mail),
+			last_connection: user.last_connection,
 			token: (mail)
 				? token.token
 				: null,
@@ -193,6 +196,8 @@ class account extends accountCRUD {
 			const user = await UserController.cleanFindOne(req.body.name);
 			if (!user)
 				return error(req, res, 'US_001').res;
+			req.user = user;
+			await checkAchievement(req, res, 'firstConnection', { user_id: user.id, latest_connection_date: (check.data as any).last_connection });
 			return success(req, res,
 				'US_101',
 				{

@@ -3,14 +3,14 @@ import { Series } from '@prisma/client';
 	
 export default class controller {
 	static async create(data: Series): Promise<Series | null | never> {
-		if (!data || !data.title ||!data.description || !data.point)
+		if (!data || !data.title ||!data.description || !data.points)
 			return null;
 		return series.create({
 			data: {
 				title: data.title,
 				image: data.image,
 				description: data.description,
-				point: data.point
+				points: data.points
 			}
 		});
 	}
@@ -45,7 +45,7 @@ export default class controller {
 				title: data.title,
 				image: data.image,
 				description: data.description,
-				point: data.point
+				points: data.points
 			}
 		});
 	}

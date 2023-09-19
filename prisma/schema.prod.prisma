@@ -26,8 +26,7 @@ model Achievement {
 	id									Int									@id @default(autoincrement())
 	name								String							@unique @db.VarChar(255)
 	description					String
-	image								String?
-	point								Int									@default(10)
+	points							Int									@default(10)
 	creation_date				DateTime?						@default(now())
 	modification_date		DateTime?						@updatedAt
 	//// relations
@@ -42,7 +41,7 @@ model Enigma {
 	title								String							@db.VarChar(255)
 	image								String?
 	description					String
-	point								Int									@default(0)
+	points							Int									@default(0)
 	creation_date				DateTime?						@default(now())
 	modification_date		DateTime?						@updatedAt
 	//// relations
@@ -58,7 +57,7 @@ model Series {
 	title								String							@unique
 	image								String?
 	description					String
-	point								Int									@default(0)
+	points							Int									@default(0)
 	creation_date				DateTime?						@default(now())
 	modification_date		DateTime?						@updatedAt
 	//// relations
@@ -75,6 +74,7 @@ model User {
 	avatar							String?
 	role								Role								@default(USER)
 	verify							Boolean?						@default(false)
+	last_connection			DateTime?
 	token								Int?								@default(0)
 	token_deadline			DateTime?						@default(now())
 	creation_date				DateTime?						@default(now())

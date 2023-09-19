@@ -62,7 +62,7 @@ class enigma {
 				title: enigma.title,
 				image: enigma.image,
 				description: enigma.description,
-				point: enigma.point,
+				points: enigma.points,
 				creation_date: null,
 				modification_date: null
 			})

@@ -117,8 +117,21 @@ export default class controller {
 					if (!d)
 						return res({ data: null, info: enumCheckUser.NOT_FOUND });
 					argon2.verify(d.password, password)
-						.then((val) => {
-							res({ data: val, info: val
+						.then(async (val) => {
+							if (val) {
+								await user.update({
+									where: {
+										id: d.id
+									},
+									data: {
+										last_connection: new Date()
+									},
+									select: {
+										id: true
+									}
+								});
+							}
+							res({ data: d, info: val
 								? enumCheckUser.OK
 								: enumCheckUser.INCORRECT_PASSWORD });
 						})

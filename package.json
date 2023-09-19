@@ -15,7 +15,7 @@
     "prisma:dev:schema": "prisma generate --schema ./prisma/schema.prisma"
   },
   "dependencies": {
-    "@prisma/client": "^5.2.0",
+    "@prisma/client": "^5.3.1",
     "argon2": "^0.31.0",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.6",
@@ -48,7 +48,7 @@
     "eslint": "^8.48.0",
     "mjml": "^4.14.1",
     "nodemon": "^3.0.1",
-    "prisma": "^5.2.0",
+    "prisma": "^5.3.1",
     "rollup": "^3.28.1",
     "rollup-plugin-typescript-paths": "^1.4.0",
     "tslib": "^2.6.2",

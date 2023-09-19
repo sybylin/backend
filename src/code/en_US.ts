@@ -13,7 +13,8 @@ const list: {
 	},
 	request: {
 		RE_001: 'Request body is empty',
-		RE_002: 'Key is not present in the request body or is empty'
+		RE_002: 'Key is not present in the request body or is empty',
+		RE_003: 'Key is not present in the params'
 	},
 	jwt: {
 		JW_001: 'jwt is invalid',
@@ -22,6 +23,13 @@ const list: {
 	},
 
 	/// Modules
+	achievement: {
+		AC_001: 'This achievement not exist',
+
+		AC_101: 'Achievement has been added',
+		AC_102: 'User has this achievement',
+		AC_103: 'User does not have this achievement'
+	},
 	user: {
 		US_001: 'User not exist in the database',
 		US_002: 'Incorrect password',

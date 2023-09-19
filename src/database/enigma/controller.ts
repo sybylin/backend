@@ -5,7 +5,7 @@ import EnigmaCreatorController from 'database/enigmaCreator/controller';
 	
 export default class controller {
 	static async create(data: Enigma, user_id: number): Promise<Enigma | null | never> {
-		if (!data || !data.series_id || !data.title || !data.description || !data.point ||
+		if (!data || !data.series_id || !data.title || !data.description || !data.points ||
 			(data && !(await SeriesController.isExist(data.series_id)))
 		)
 			return null;
@@ -15,7 +15,7 @@ export default class controller {
 				title: data.title,
 				image: data.image,
 				description: data.description,
-				point: data.point
+				points: data.points
 			}
 		});
 		await EnigmaCreatorController.create({ enigma_id: newEnigma.id, user_id });
@@ -53,7 +53,7 @@ export default class controller {
 	}
 	
 	static async update(data: Enigma): Promise<Enigma | null> {
-		if (!data || !data.id || !data.series_id || !data.title || !data.description || !data.point || 
+		if (!data || !data.id || !data.series_id || !data.title || !data.description || !data.points || 
 			(data && !(await SeriesController.isExist(data.series_id)))
 		)
 			return null;
@@ -66,7 +66,7 @@ export default class controller {
 				title: data.title,
 				image: data.image,
 				description: data.description,
-				point: data.point
+				points: data.points
 			}
 		});
 	}

@@ -4,7 +4,7 @@ import AchivementController from 'database/achievement/controller';
 import UserController from 'database/user/controller';
 	
 export default class controller {
-	static async create(data: UserAchievement): Promise<UserAchievement | null | never> {
+	static async create(data: Omit<UserAchievement, 'unlocking_date'>): Promise<UserAchievement | null | never> {
 		if (!data || !data.achievement_id || !data.user_id ||
 			(data && !await AchivementController.isExist(data.achievement_id)) ||
 			(data && !await UserController.isExist(data.user_id))

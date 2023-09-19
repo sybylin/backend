@@ -13,7 +13,8 @@ const list: {
 	},
 	request: {
 		RE_001: 'Le corps de la requête est vide',
-		RE_002: 'La clé n\'est pas présente dans le corps de la requête ou est vide'
+		RE_002: 'La clé n\'est pas présente dans le corps de la requête ou est vide',
+		RE_003: 'La clé n\'est pas présente dans les paramètres'
 	},
 	jwt: {
 		JW_001: 'jwt est invalide',
@@ -22,6 +23,13 @@ const list: {
 	},
 
 	/// Modules
+	achievement: {
+		AC_001: 'Ce succès n\'existe pas',
+
+		AC_101: 'Le succès a été ajouté',
+		AC_102: 'L\'utilisateur a ce succès',
+		AC_103: 'L\'utilisateur n\'a pas ce succès'
+	},
 	user: {
 		US_001: 'Utilisateur inexistant dans la base de données',
 		US_002: 'Mot de passe incorrect',

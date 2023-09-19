@@ -1,28 +1,19 @@
-import { mkdir } from 'fs/promises';
-import { extname, resolve } from 'path/posix';
-
+import { extname } from 'path/posix';
 import compression from 'compression';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import express from 'express';
 import helmet from 'helmet';
 import hpp from 'hpp';
-
 import { ExpressLog } from 'lib/log';
 import routes from './routes';
-import favicon from './icon';
+import { AchievementHeader } from './achievement/abstractAchievementClass';
 
 import type { Application, NextFunction, Request, Response } from 'express';
 
 (async() => {
 	const app: Application = express();
 	const PORT = process.env.BACK_PORT || process.env.PORT || 3000;
-
-	try {
-		await mkdir(resolve('.', 'temp'));
-	} catch(___) {
-		// make nothing
-	}
 
 	app.disable('x-powered-by');
 	app.set('trust proxy', 1);
@@ -36,14 +27,17 @@ import type { Application, NextFunction, Request, Response } from 'express';
 		next();
 	});
 	app.use(cors({
-		allowedHeaders: ['Content-Type', 'Access-Control-Allow-Headers', 'X-Requested-With', 'Authorization', 'X-Xsrf-Token'],
+		allowedHeaders: [
+			'Content-Type', 'Access-Control-Allow-Headers', 'X-Requested-With',
+			'Authorization', 'X-Xsrf-Token', AchievementHeader
+		],
+		exposedHeaders: AchievementHeader,
 		credentials: true,
 		methods: ['DELETE', 'HEAD', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT'],
 		origin: ['http://localhost:3000', 'http://localhost:9100']
 	}));
 	app.use(compression());
 	app.use(ExpressLog);
-	app.use('/favicon.ico', favicon);
 	app.use((req, res, next) => {
 		const ext = extname(req.path);
 		if (/.(appcache|atom|bbaw|bmp|crx|css|cur|eot|f4[abpv]|flv|geojson|gif|htc|ic[os]|jpe?g|m?js|json(ld)?|m4[av]|manifest|map|markdown|md|mp4|oex|og[agv]|opus|otf|pdf|png|rdf|rss|safariextz|svgz?|swf|topojson|tt[cf]|txt|vcard|vcf|vtt|webapp|web[mp]|webmanifest|woff2?|xloc|xpi)$/.test(ext)) {
