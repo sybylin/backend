@@ -1,4 +1,5 @@
 import type { Request } from 'express';
+import type { Role } from '@prisma/client';
 
 export interface UserRequest extends Request {
 	params: {
@@ -13,11 +14,3 @@ export interface UserRequest extends Request {
 		role: Role
 	}
 }
-
-export const Role = {
-	USER: 'USER',
-	MODERATOR: 'MODERATOR',
-	ADMINISTRATOR: 'ADMINISTRATOR'
-};
-
-export type Role = (typeof Role)[keyof typeof Role]

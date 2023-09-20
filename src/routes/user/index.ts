@@ -9,6 +9,7 @@ import { generateJwtToken, jwtMiddleware } from 'lib/jwt';
 import { JWT_COOKIE_NAME } from 'lib/jwtSendCookie';
 import mailSystem from 'lib/mail';
 import { log } from 'lib/log';
+import { checkAchievement } from '@/achievement';
 import TokenController from 'database/token/controller';
 import UserController from 'database/user/controller';
 import { enumCheckUser } from 'database/user/controller';
@@ -16,11 +17,12 @@ import { verifyRequest, generateToken } from './utility';
 import { initPasswordReset, resetPassword } from './resetPassword';
 
 import type { NextFunction, Response } from 'express';
+import type { User } from '@prisma/client';
 import type { UserRequest } from './interface';
-import { checkAchievement } from '@/achievement';
 
 class accountCRUD {
-	static async create(req: UserRequest, res: Response<any>, next: NextFunction) {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	static async create(req: UserRequest, res: Response<any>, _next: NextFunction) {
 		const hasError = verifyRequest(req, res, true, true);
 		if (hasError)
 			return hasError.res;
@@ -28,30 +30,37 @@ class accountCRUD {
 		if (mail === false)
 			return error(req, res, 'US_004').res;
 		const token = generateToken();
-		const account = await UserController.create({
-			name: req.body.name,
-			email: mail,
-			role: 'USER',
-			password: req.body.password as string,
-			verify: false,
-			last_connection: null,
-			token: token.token,
-			token_deadline: token.deadline
-		})
-			.catch((e) => {
-				if (e.code === 'P2002') {
-					if (e.meta.target.includes('name'))
-						return error(req, res, 'US_006').res;
-					if (e.meta.target.includes('email'))
-						return error(req, res, 'US_007').res;
-				} else
-					next(e);
+		
+		let account: { name: string; email: string } | null = null;
+		try {
+			account = await UserController.create({
+				name: req.body.name,
+				email: mail,
+				role: 'USER',
+				password: req.body.password as string,
+				verify: false,
+				last_connection: null,
+				token: token.token,
+				token_deadline: token.deadline
 			});
-
+		} catch (e: any) {
+			if (e.code === 'P2002') {
+				if (e.meta.target.includes('name'))
+					return error(req, res, 'US_006').res;
+				if (e.meta.target.includes('email'))
+					return error(req, res, 'US_007').res;
+			} else
+				return error(req, res, 'GE_003', { data: { accountCreationFailed: true } });
+		}
+		
 		if (!account || typeof account === 'boolean')
-			return next(new Error(getInfo('GE_003').message));
-		await mailSystem.accountVerification(mail, { token: token.token.toString() })
-			.catch(() => next(new Error(getInfo('GE_002').message)));
+			return error(req, res, 'GE_003', { data: { accountCreationFailed: true } });
+		try {
+			await mailSystem.accountVerification(mail, { token: token.token.toString() });
+		} catch {
+			await UserController.delete(req.body.name);
+			return error(req, res, 'GE_002', { data: { mailSystemFailed: true } });
+		}
 
 		return success(req, res, 'US_104', {
 			data: {
@@ -82,39 +91,52 @@ class accountCRUD {
 		const mail = normalizeEmail(req.body.email);
 		if (mail === false)
 			return error(req, res, 'US_004').res;
-		const accountCheck = await UserController.check(req.body.name, req.body.password)
-			.catch((e) => {
-				if (e.code === 'P2002') {
-					if (e.meta.target.includes('name'))
-						return error(req, res, 'US_006').res;
-					if (e.meta.target.includes('email'))
-						return error(req, res, 'US_007').res;
-				} else
-					next(e);
-			});
+
+		let accountCheck: { data: unknown; info: enumCheckUser } | null = null;
+		let user: User | null = null;
+		try {
+			accountCheck = await UserController.check(req.body.name, req.body.password);
+		} catch (e: any) {
+			if (e.code === 'P2002') {
+				if (e.meta.target.includes('name'))
+					return error(req, res, 'US_006').res;
+				if (e.meta.target.includes('email'))
+					return error(req, res, 'US_007').res;
+			} else
+				return next(e);
+		}
 		if (!accountCheck)
 			return error(req, res, 'US_001').res;
-		const user = await UserController.findOne(req.body.name);
+
+		try {
+			user = await UserController.findOne(req.body.name);
+		} catch {
+			return error(req, res, 'GE_002').res;
+		}
 		if (!user)
 			return error(req, res, 'GE_001').res;
+
 		const token = generateToken();
-		await UserController.update({
-			id: user.id,
-			name: req.body.name,
-			email: mail ?? user.email,
-			verify: !(mail),
-			last_connection: user.last_connection,
-			token: (mail)
-				? token.token
-				: null,
-			token_deadline: (mail)
-				? token.deadline
-				: null,
-			password: req.body.password as string ?? undefined
-		}, !!(req.body.password))
-			.catch(() => next(new Error(getInfo('GE_002').message)));
-		mailSystem.accountVerification(mail, { token: String(token.token) })
-			.catch(() => next(new Error(getInfo('GE_002').message)));
+		try {
+			await UserController.update({
+				id: user.id,
+				name: req.body.name,
+				email: mail ?? user.email,
+				verify: !(mail),
+				last_connection: user.last_connection,
+				token: (mail)
+					? token.token
+					: null,
+				token_deadline: (mail)
+					? token.deadline
+					: null,
+				password: req.body.password as string ?? undefined
+			}, !!(req.body.password));
+			mailSystem.accountVerification(mail, { token: String(token.token) });
+		} catch {
+			return next(new Error(getInfo('GE_002').message));
+		}
+
 		return success(req, res, 'US_102', {
 			data: {
 				mailSend: true
@@ -122,18 +144,26 @@ class accountCRUD {
 		}).res;
 	}
 
-	static async delete(req: UserRequest, res: Response<any>, next: NextFunction) {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	static async delete(req: UserRequest, res: Response<any>, _next: NextFunction) {
 		const hasError = verifyRequest(req, res, true, false);
 		if (hasError)
 			return hasError.res;
 
-		const accountCheck = await UserController.check(req.body.name, req.body.password)
-			.catch((e) => next(e));
-		if (!accountCheck)
+		try {
+			const accountCheck = await UserController.check(req.body.name, req.body.password);
+			if (!accountCheck)
+				throw new Error();
+			await UserController.delete(req.body.name);
+		} catch(e) {
 			return error(req, res, 'US_001').res;
-		await UserController.delete(req.body.name)
-			.catch((e) => next(e));
-		return success(req, res, 'US_106', { data: { name: req.body.name } }).res;
+		}
+
+		return success(req, res, 'US_106', {
+			data: {
+				name: req.body.name
+			}
+		}).res;
 	}
 }
 
@@ -298,12 +328,25 @@ class account extends accountCRUD {
 			}
 		}).res;
 	}
+
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	static async getPoints(req: UserRequest, res: Response<any>, _next: NextFunction) {
+		if (req.user) {
+			return success(req, res, 'US_107', {
+				data: {
+					points: await UserController.getPoints(req.user.id)
+				}
+			}).res;
+		}
+		return error(req, res, 'US_001');
+	}
 }
 
 export default Router()
-	.get('/logout', jwtMiddleware.acceptUser, account.logout)
-	.get('/user/:name', jwtMiddleware.acceptUser, account.getUser)
 	.get('/', jwtMiddleware.acceptUser, account.getHisInfo)
+	.get('/points', jwtMiddleware.acceptUser, account.getPoints)
+	.get('/logout', jwtMiddleware.acceptUser, account.logout)
+	.get('/get/:name', jwtMiddleware.acceptUser, account.getUser)
 
 	.post('/create', account.create)
 	.post('/check', account.checkUser)

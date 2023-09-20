@@ -1,16 +1,33 @@
 generator client {
-  provider = "prisma-client-js"
+	provider = "prisma-kysely"
+	output = "./../src/kysely"
+	fileName = "types.ts"
+	enumFileName = "enums.ts"
 }
 
 datasource db {
-	provider = "sqlite"
-  url      = "file:./dev.db"
+  provider	= "postgresql"
+  url				= "postgresql://root:root@localhost:5432/sibyllin"
 }
+
+// #region Enum
+enum Role {
+	USER
+	MODERATOR
+	ADMINISTRATOR
+}
+
+enum Solution {
+	STRING
+	ARRAY
+	OBJECT
+}
+// #endregion Enum
 
 // #region Main tables
 model Achievement {
 	id									Int									@id @default(autoincrement())
-	name								String							@unique
+	name								String							@unique @db.VarChar(255)
 	description					String
 	points							Int									@default(10)
 	creation_date				DateTime?						@default(now())
@@ -24,7 +41,7 @@ model Achievement {
 model Enigma {
 	id									Int									@id @default(autoincrement())
 	series_id						Int
-	title								String
+	title								String							@db.VarChar(255)
 	image								String?
 	description					String
 	points							Int									@default(0)
@@ -54,11 +71,11 @@ model Series {
 
 model User {
 	id									Int									@id @default(autoincrement())
-	name								String							@unique
-	email								String							@unique
+	name								String							@unique @db.VarChar(255)
+	email								String							@unique @db.VarChar(255)
 	password						String
 	avatar							String?
-	role								String							@default("USER")
+	role								Role								@default(USER)
 	verify							Boolean?						@default(false)
 	last_connection			DateTime?
 	token								Int?								@default(0)
@@ -124,7 +141,7 @@ model EnigmaFinished {
 
 model EnigmaSolution {
 	enigma_id						Int									@unique
-	type								String							@default("STRING")
+	type								Solution						@default(STRING)
 	solution						String
 	//// relations
 	enigma							Enigma							@relation(fields: [enigma_id], references: [id])

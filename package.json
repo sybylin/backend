@@ -11,8 +11,9 @@
     "mjml:lint": "mjml ./mail/*.mjml --config.validationLevel strict",
     "prisma:prod": "prisma migrate deploy && yarn serve",
     "prisma:prod:schema": "prisma generate --schema ./prisma/schema.prod.prisma",
-    "prisma:dev": "prisma db push",
-    "prisma:dev:schema": "prisma generate --schema ./prisma/schema.prisma"
+    "prisma:dev": "prisma db push --schema ./prisma/schema.dev.prisma",
+    "prisma:dev:schema": "prisma generate --schema ./prisma/schema.dev.prisma",
+    "prisma:kysely:schema": "prisma generate --schema ./prisma/schema.kysely.prisma"
   },
   "dependencies": {
     "@prisma/client": "^5.3.1",
@@ -26,8 +27,11 @@
     "helmet": "^7.0.0",
     "hpp": "^0.2.3",
     "jsonwebtoken": "^9.0.1",
+    "kysely": "^0.26.3",
     "lodash": "^4.17.21",
     "nodemailer": "^6.9.4",
+    "pg": "^8.11.3",
+    "prisma-kysely": "^1.7.0",
     "validator": "^13.11.0"
   },
   "devDependencies": {
@@ -42,6 +46,7 @@
     "@types/lodash.isequal": "^4.5.6",
     "@types/node": "^20.5.6",
     "@types/nodemailer": "^6.4.9",
+    "@types/pg": "^8.10.2",
     "@types/validator": "^13.11.1",
     "@typescript-eslint/eslint-plugin": "^6.4.1",
     "@typescript-eslint/parser": "^6.4.1",

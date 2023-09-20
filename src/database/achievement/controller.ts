@@ -83,8 +83,15 @@ export default class controller {
 		});
 	}
 
-	static async findAll(): Promise<Achievement[] | null> {
-		return achievement.findMany();
+	static async findAll(): Promise<Omit<Achievement, 'id' | 'creation_date'>[] | null> {
+		return achievement.findMany({
+			select: {
+				name: true,
+				description: true,
+				points: true,
+				modification_date: true
+			}
+		});
 	}
 
 	static async update(data: Omit<Achievement, 'creation_date' | 'modification_date'>): Promise<Achievement | null> {

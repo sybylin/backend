@@ -1,7 +1,6 @@
 import * as argon2 from 'argon2';
 import { user } from 'database/db.instance';
-import { User } from '@prisma/client';
-import type { Role } from '@/routes/user/interface';
+import { User, Role } from '@prisma/client';
 
 export interface CleanUser {
 	id: number;
@@ -220,5 +219,29 @@ export default class controller {
 		if (!userRole)
 			return null;
 		return userRole.role as Role;
+	}
+
+	static async getPoints(user_id: number): Promise<number> {
+		const aggr = await user.findUnique({
+			where: {
+				id: user_id
+			},
+			select: {
+				series_finished: { select: { series: { select: { points: true } } } },
+				enigma_finished: { select: { enigma: { select: { points: true } } } },
+				user_achievement: { select: { achievement: { select: { points: true } } } }
+			}
+		});
+		let points = 0;
+
+		if (aggr) {
+			if (Array.isArray(aggr.series_finished))
+				aggr.series_finished.forEach((e) => points += e.series.points);
+			if (Array.isArray(aggr.enigma_finished))
+				aggr.enigma_finished.forEach((e) => points += e.enigma.points);
+			if (Array.isArray(aggr.user_achievement))
+				aggr.user_achievement.forEach((e) => points += e.achievement.points);
+		}
+		return points;
 	}
 }

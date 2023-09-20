@@ -7,7 +7,7 @@ import { error } from 'src/code/format';
 import getInfo from 'src/code';
 import { JWT_COOKIE_NAME, milliseconds } from './jwtSendCookie';
 
-import { Role } from '@/routes/user/interface';
+import { Role } from '@prisma/client';
 import type { Request, Response, NextFunction } from 'express';
 import type { token } from './jwtInterface';
 
