@@ -10,7 +10,7 @@ interface FirstConnectionCheckAchievement {
 
 class FirstConnection extends Achievement {
 	constructor() {
-		super('firstConnection', 'User first connection', 320);
+		super('firstConnection', 'User first connection', 30);
 	}
 
 	async check(res: Response, data: FirstConnectionCheckAchievement): Promise<boolean> {
