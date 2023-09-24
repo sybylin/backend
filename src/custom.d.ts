@@ -5,5 +5,8 @@ declare global {
 		interface Request {
 			user?: CleanUser
 		}
+		interface Response {
+			achievements: { name: string, timestamp: Date }[]
+		}
 	}
 }

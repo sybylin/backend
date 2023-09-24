@@ -23,7 +23,7 @@ class FirstConnection extends Achievement {
 					///
 				});
 			if (check) {
-				this.attachHeader(res);
+				this.add(res);
 				return true;
 			}
 		}

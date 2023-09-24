@@ -48,6 +48,8 @@ function resFormat(
 		sendCookieToResponse(res, jwt);
 		retObj['x-xsrf-token'] = jwt.xsrf;
 	}
+	if (res.achievements && res.achievements.length)
+		retObj['achievements'] = res.achievements;
 	return res.status(statusCode).send(retObj);
 }
 

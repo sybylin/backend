@@ -6,8 +6,8 @@ import express from 'express';
 import helmet from 'helmet';
 import hpp from 'hpp';
 import { ExpressLog } from 'lib/log';
+import initAchievementMiddleware from './achievement/initMiddleware';
 import routes from './routes';
-import { AchievementHeader } from './achievement/abstractAchievementClass';
 
 import type { Application, NextFunction, Request, Response } from 'express';
 
@@ -29,9 +29,8 @@ import type { Application, NextFunction, Request, Response } from 'express';
 	app.use(cors({
 		allowedHeaders: [
 			'Content-Type', 'Access-Control-Allow-Headers', 'X-Requested-With',
-			'Authorization', 'X-Xsrf-Token', AchievementHeader
+			'Authorization', 'X-Xsrf-Token'
 		],
-		exposedHeaders: AchievementHeader,
 		credentials: true,
 		methods: ['DELETE', 'HEAD', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT'],
 		origin: ['http://localhost:3000', 'http://localhost:9100']
@@ -51,6 +50,7 @@ import type { Application, NextFunction, Request, Response } from 'express';
 		}
 		next();
 	});
+	app.use(initAchievementMiddleware);
 	routes(app);
 	app.listen(PORT, (): void => {
 		console.log(`server is running at ${PORT}`);

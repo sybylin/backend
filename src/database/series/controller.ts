@@ -2,15 +2,15 @@ import { series } from 'database/db.instance';
 import { Series } from '@prisma/client';
 	
 export default class controller {
-	static async create(data: Series): Promise<Series | null | never> {
-		if (!data || !data.title ||!data.description || !data.points)
+	static async create(data: Omit<Series, 'id' | 'image' | 'points' | 'creation_date' | 'modification_date'>): Promise<Series | null | never> {
+		if (!data || !data.title ||!data.description)
 			return null;
 		return series.create({
 			data: {
 				title: data.title,
-				image: data.image,
+				image: null,
 				description: data.description,
-				points: data.points
+				points: 0
 			}
 		});
 	}

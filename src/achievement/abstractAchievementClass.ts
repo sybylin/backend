@@ -1,8 +1,6 @@
 import AchievementController from 'database/achievement/controller';
 import type { Response } from 'express';
 
-export const AchievementHeader = 'X-Achievement';
-
 export default abstract class Achievement {
 	public name: string;
 	public description: string;
@@ -29,8 +27,11 @@ export default abstract class Achievement {
 			});
 	}
 
-	attachHeader(res: Response): void {
-		res.append(AchievementHeader, this.name);
+	/**
+	 * Add achievement to response body
+	 */
+	add(res: Response): void {
+		res.achievements.push({ name: this.name, timestamp: new Date() });
 	}
 
 	abstract check(res: Response, data: unknown): Promise<boolean>;
