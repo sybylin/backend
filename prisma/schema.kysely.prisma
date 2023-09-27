@@ -33,14 +33,14 @@ model Achievement {
 	creation_date				DateTime?						@default(now())
 	modification_date		DateTime?						@updatedAt
 	//// relations
-	user_achievement			UserAchievement[]
+	user_achievement		UserAchievement[]
 	
-	achievement_creator		AchievementCreator[]
+	achievement_creator	AchievementCreator[]
 }
 
 model Enigma {
 	id									Int									@id @default(autoincrement())
-	series_id						Int
+	serie_id						Int
 	title								String							@db.VarChar(255)
 	image								String?
 	description					String
@@ -48,14 +48,14 @@ model Enigma {
 	creation_date				DateTime?						@default(now())
 	modification_date		DateTime?						@updatedAt
 	//// relations
-	series_enigma_order	SeriesEnigmaOrder[]
+	serie_enigma_order	SerieEnigmaOrder[]
 
 	enigma_solution			EnigmaSolution?
 	enigma_finished			EnigmaFinished[]
 	enigma_creator			EnigmaCreator[]
 }
 
-model Series {
+model Serie {
 	id									Int									@id @default(autoincrement())
 	title								String							@unique
 	image								String?
@@ -64,9 +64,9 @@ model Series {
 	creation_date				DateTime?						@default(now())
 	modification_date		DateTime?						@updatedAt
 	//// relations
-	series_finished			SeriesFinished[]
-	series_enigma_order	SeriesEnigmaOrder[]
-	series_creator			SeriesCreator[]
+	serie_finished			SerieFinished[]
+	serie_enigma_order	SerieEnigmaOrder[]
+	serie_creator				SerieCreator[]
 }
 
 model User {
@@ -83,8 +83,8 @@ model User {
 	creation_date				DateTime?						@default(now())
 	modification_date		DateTime?						@updatedAt
 	//// relations
-	series_finished			SeriesFinished[]
-	series_creator			SeriesCreator[]
+	serie_finished			SerieFinished[]
+	serie_creator				SerieCreator[]
 
 	enigma_finished			EnigmaFinished[]
 	enigma_creator			EnigmaCreator[]
@@ -148,36 +148,36 @@ model EnigmaSolution {
 }
 // #endregion Enigma
 
-// #region Series
-model SeriesCreator {
-	series_id						Int
+// #region Serie
+model SerieCreator {
+	serie_id						Int
 	user_id							Int
-	@@unique([series_id, user_id])
+	@@unique([serie_id, user_id])
 	//// relations
-	series							Series							@relation(fields: [series_id], references: [id])
+	serie								Serie							@relation(fields: [serie_id], references: [id])
 	user								User								@relation(fields: [user_id], references: [id])
 }
 
-model SeriesEnigmaOrder {
-	series_id						Int
+model SerieEnigmaOrder {
+	serie_id						Int
 	enigma_id						Int
 	order								Int
-	@@unique([series_id, enigma_id])
+	@@unique([serie_id, enigma_id])
 	//// relations
-	series							Series							@relation(fields: [series_id], references: [id])
+	serie								Serie							@relation(fields: [serie_id], references: [id])
 	enigma							Enigma							@relation(fields: [enigma_id], references: [id])
 }
 
-model SeriesFinished {
-	series_id						Int
+model SerieFinished {
+	serie_id						Int
 	user_id							Int
 	completion_date			DateTime?						@default(now())
-	@@unique([series_id, user_id])
+	@@unique([serie_id, user_id])
 	//// relations
-	series							Series							@relation(fields: [series_id], references: [id])
+	serie								Serie							@relation(fields: [serie_id], references: [id])
 	user								User								@relation(fields: [user_id], references: [id])
 }
-// #endregion Series
+// #endregion Serie
 
 // #region User
 model UserAchievement {

@@ -1,17 +1,17 @@
-import { enigma } from 'database/db.instance';
+import { enigma, serieEnigmaOrder } from 'database/db.instance';
 import { Enigma } from '@prisma/client';
-import SeriesController from 'database/series/controller';
+import SerieController from 'database/serie/controller';
 import EnigmaCreatorController from 'database/enigmaCreator/controller';
 	
 export default class controller {
 	static async create(data: Enigma, user_id: number): Promise<Enigma | null | never> {
-		if (!data || !data.series_id || !data.title || !data.description || !data.points ||
-			(data && !(await SeriesController.isExist(data.series_id)))
+		if (!data || !data.serie_id || !data.title || !data.description || !data.points ||
+			(data && !(await SerieController.isExist(data.serie_id)))
 		)
 			return null;
 		const newEnigma = await enigma.create({
 			data: {
-				series_id: data.series_id,
+				serie_id: data.serie_id,
 				title: data.title,
 				image: data.image,
 				description: data.description,
@@ -33,28 +33,26 @@ export default class controller {
 		});
 	}
 	
-	static async findAll(series_id: number): Promise<Enigma[] | null> {
-		return enigma.findMany({
+	static async findAll(serie_id: number): Promise<{ enigma: Enigma, order: number }[] | null> {
+		return serieEnigmaOrder.findMany({
 			where: {
-				series_id
+				serie_id
 			},
-			include: {
-				enigma_solution: true
+			select: {
+				enigma: true,
+				order: true
 			},
 			orderBy: [
 				{
-					creation_date: 'asc'
-				},
-				{
-					modification_date: 'asc'
+					order: 'asc'
 				}
 			]
 		});
 	}
 	
 	static async update(data: Enigma): Promise<Enigma | null> {
-		if (!data || !data.id || !data.series_id || !data.title || !data.description || !data.points || 
-			(data && !(await SeriesController.isExist(data.series_id)))
+		if (!data || !data.id || !data.serie_id || !data.title || !data.description || !data.points || 
+			(data && !(await SerieController.isExist(data.serie_id)))
 		)
 			return null;
 		return enigma.update({
@@ -62,7 +60,7 @@ export default class controller {
 				id: data.id
 			},
 			data: {
-				series_id: data.series_id,
+				serie_id: data.serie_id,
 				title: data.title,
 				image: data.image,
 				description: data.description,

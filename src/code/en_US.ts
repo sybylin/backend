@@ -30,14 +30,20 @@ const list: {
 		AC_102: 'User has this achievement',
 		AC_103: 'User does not have this achievement'
 	},
+	series: {
+		SE_001: 'A serie already exists with this name',
+		SE_002: 'Serie creation failed, contact administrator',
+
+		SE_101: 'Serie has been created'
+	},
 	user: {
 		US_001: 'User not exist in the database',
 		US_002: 'Incorrect password',
 		US_003: 'This account is already verified',
 		US_004: 'Email normalize failed',
 		US_005: 'Email is invalid',
-		US_006: 'An account already exists with this username',
-		US_007: 'An account already exists with this email address',
+		US_006: 'A account already exists with this username',
+		US_007: 'A account already exists with this email address',
 		US_008: 'Token is malformed',
 		US_009: 'Token is expired, please repeat the process',
 		US_010: 'Token is invalid',

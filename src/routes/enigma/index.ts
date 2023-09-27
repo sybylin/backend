@@ -11,6 +11,7 @@ import { jwtMiddleware } from 'lib/jwt';
 
 import type { NextFunction, Request, Response } from 'express';
 
+
 /**
  * Verify is bitmasking, pass 1 or 0 for active/desactive check
  * 1- enigmaID
@@ -18,23 +19,48 @@ import type { NextFunction, Request, Response } from 'express';
  * 3- userID
  * 4- solution
  */
-const verifyData = (req: Request<any>, res: Response<any>, verify = '0000'): returnFormat | null => {
+const verifyRequest = (req: Request, res: Response, verify = '0000'): returnFormat | null => {
+	const missingKeys: string[] = [];
+
 	if (!Object.keys(req.body).length)
 		return error(req, res, 'RE_001');
-	if (verify[0] === '1' && (!req.body.id || isEmpty(req.body.id) || !isNumeric(req.body.id)))
-		return error(req, res, 'RE_002', { data: { key: 'id' } });
-	if (verify[1] === '1' && (!req.body.series_id || isEmpty(req.body.series_id) || !isNumeric(req.body.series_id)))
-		return error(req, res, 'RE_002', { data: { key: 'series_id' } });
-	if (verify[2] === '1' && (!req.body.user_id || isEmpty(req.body.user_id) || !isNumeric(req.body.user_id)))
-		return error(req, res, 'RE_002', { data: { key: 'user_id' } });
-	if (verify[3] === '1' && (!req.body.solution || isEmpty(req.body.solution) || !isNumeric(req.body.solution)))
-		return error(req, res, 'RE_002', { data: { key: 'solution' } });
+	for (let i = 0; i < verify.length; i++) {
+		if (verify[i] ===  '0')
+			continue;
+		switch (i) {
+		case 0:
+			if ((!req.body.id || !isNumeric(String(req.body.id))))
+				missingKeys.push('id');
+			break;
+		case 1:
+			if ((!req.body.serie_id || !isNumeric(String(req.body.serie_id))))
+				missingKeys.push('serie_id');
+			break;
+		case 2:
+			if ((!req.body.user_id || !isNumeric(String(req.body.user_id))))
+				missingKeys.push('user_id');
+			break;
+		case 3:
+			if ((!req.body.solution || isEmpty(String(req.body.solution))))
+				missingKeys.push('solution');
+		}
+	}
+	if (missingKeys.length) {
+		return error(req, res, 'RE_002', { data: {
+			key: (missingKeys.length === 1)
+				? missingKeys[0]
+				: undefined,
+			keys: (missingKeys.length > 1)
+				? missingKeys
+				: undefined
+		}});
+	}
 	return null;
 };
 
 class enigma {
 	static get(req: Request<any>, res: Response<any>, next: NextFunction) {
-		const hasError = verifyData(req, res, '1000');
+		const hasError = verifyRequest(req, res, '1000');
 		if (hasError)
 			return hasError.res;
 		EnigmaController.findOne(Number(req.body.id))
@@ -51,14 +77,14 @@ class enigma {
 	}
 
 	static async update(req: Request<any>, res: Response<any>, next: NextFunction) {
-		const hasError = verifyData(req, res, '1000');
+		const hasError = verifyRequest(req, res, '1000');
 		if (hasError)
 			return hasError.res;
 		const enigma = await EnigmaController.findOne(req.body.id);
 		if (enigma) {
 			EnigmaController.update({
 				id: enigma.id,
-				series_id: enigma.series_id,
+				serie_id: enigma.serie_id,
 				title: enigma.title,
 				image: enigma.image,
 				description: enigma.description,
@@ -71,7 +97,7 @@ class enigma {
 	}
 
 	static async delete(req: Request<any>, res: Response<any>, next: NextFunction) {
-		const hasError = verifyData(req, res, '1000');
+		const hasError = verifyRequest(req, res, '1000');
 		if (hasError)
 			return hasError.res;
 		EnigmaController.delete(req.body.id)
@@ -79,25 +105,26 @@ class enigma {
 			.catch(() => next(new Error(getInfo('GE_002').message)));
 	}
 
-	static getAllOfSeries(req: Request<any>, res: Response<any>, next: NextFunction) {
-		const hasError = verifyData(req, res, '0100');
+	static async getAllOfSeries(req: Request<any>, res: Response<any>, next: NextFunction) {
+		const hasError = verifyRequest(req, res, '0100');
 		if (hasError)
 			return hasError.res;
-		EnigmaController.findAll(Number(req.body.series_id))
-			.then((d) => {
-				if (!d)
-					return error(req, res, 'EN_001').res;
-				return success(req, res, 'EN_102', {
-					data: {
-						...d
-					}
-				}).res;
-			})
-			.catch(() => next(new Error(getInfo('GE_001').message)));
+		try {
+			const enigmas = await EnigmaController.findAll(Number(req.body.serie_id));
+			if (!enigmas)
+				return error(req, res, 'EN_001').res;
+			return success(req, res, 'EN_102', {
+				data: {
+					enigmas
+				}
+			}).res;
+		} catch (e) {
+			next(new Error(getInfo('GE_001').message));
+		}
 	}
 
 	static isFinished(req: Request<any>, res: Response<any>, next: NextFunction) {
-		const hasError = verifyData(req, res, '1010');
+		const hasError = verifyRequest(req, res, '1010');
 		if (hasError)
 			return hasError.res;
 
@@ -115,7 +142,7 @@ class enigma {
 	}
 
 	static verifySolution(req: Request<any>, res: Response<any>, next: NextFunction) {
-		const hasError = verifyData(req, res, '1001');
+		const hasError = verifyRequest(req, res, '1001');
 		if (hasError)
 			return hasError.res;
 
@@ -132,7 +159,7 @@ class enigma {
 }
 
 export default Router()
-	.get('/one', jwtMiddleware.acceptUser, enigma.get)
-	.get('/all', jwtMiddleware.acceptUser, enigma.getAllOfSeries)
-	.get('/finished', jwtMiddleware.acceptUser, enigma.isFinished)
-	.get('/check', jwtMiddleware.acceptUser, enigma.verifySolution);
+	.post('/one', jwtMiddleware.acceptUser, enigma.get)
+	.post('/all', jwtMiddleware.acceptUser, enigma.getAllOfSeries)
+	.post('/finished', jwtMiddleware.acceptUser, enigma.isFinished)
+	.post('/check', jwtMiddleware.acceptUser, enigma.verifySolution);

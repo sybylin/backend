@@ -1,10 +1,10 @@
-import type { ColumnType } from "kysely";
+import type { ColumnType } from 'kysely';
 export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
-import type { Role, Solution } from "./enums";
+import type { Role, Solution } from './enums';
 
 export type Achievement = {
     id: Generated<number>;
@@ -20,7 +20,7 @@ export type AchievementCreator = {
 };
 export type Enigma = {
     id: Generated<number>;
-    series_id: number;
+    serie_id: number;
     title: string;
     image: string | null;
     description: string;
@@ -42,7 +42,7 @@ export type EnigmaSolution = {
     type: Generated<Solution>;
     solution: string;
 };
-export type Series = {
+export type Serie = {
     id: Generated<number>;
     title: string;
     image: string | null;
@@ -51,17 +51,17 @@ export type Series = {
     creation_date: Generated<Timestamp | null>;
     modification_date: Timestamp | null;
 };
-export type SeriesCreator = {
-    series_id: number;
+export type SerieCreator = {
+    serie_id: number;
     user_id: number;
 };
-export type SeriesEnigmaOrder = {
-    series_id: number;
+export type SerieEnigmaOrder = {
+    serie_id: number;
     enigma_id: number;
     order: number;
 };
-export type SeriesFinished = {
-    series_id: number;
+export type SerieFinished = {
+    serie_id: number;
     user_id: number;
     completion_date: Generated<Timestamp | null>;
 };
@@ -102,10 +102,10 @@ export type DB = {
     EnigmaCreator: EnigmaCreator;
     EnigmaFinished: EnigmaFinished;
     EnigmaSolution: EnigmaSolution;
-    Series: Series;
-    SeriesCreator: SeriesCreator;
-    SeriesEnigmaOrder: SeriesEnigmaOrder;
-    SeriesFinished: SeriesFinished;
+    Serie: Serie;
+    SerieCreator: SerieCreator;
+    SerieEnigmaOrder: SerieEnigmaOrder;
+    SerieFinished: SerieFinished;
     Token: Token;
     User: User;
     UserAchievement: UserAchievement;
