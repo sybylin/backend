@@ -110,7 +110,11 @@ export default class controller {
 			user.findUnique({
 				where: (typeof nameOrId === 'number')
 					? { id: nameOrId }
-					: { name: nameOrId }
+					: { name: nameOrId },
+				select: {
+					id: true,
+					password: true
+				}
 			})
 				.then((d) => {
 					if (!d)

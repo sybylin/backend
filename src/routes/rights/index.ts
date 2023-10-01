@@ -9,7 +9,11 @@ const successfulIdentification = (
 	res: Response<any>,
 	_next: NextFunction // eslint-disable-line @typescript-eslint/no-unused-vars
 ) => {
-	return success(req, res, 'JW_101').res;
+	return success(req, res, 'JW_101', {
+		data: {
+			userIsVerify: req.user.verify ?? false
+		}
+	}).res;
 };
 
 export default Router()

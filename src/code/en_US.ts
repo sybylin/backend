@@ -33,8 +33,11 @@ const list: {
 	series: {
 		SE_001: 'A serie already exists with this name',
 		SE_002: 'Serie creation failed, contact administrator',
+		SE_003: 'User does not have the necessary rights to edit this serie',
 
-		SE_101: 'Serie has been created'
+		SE_101: 'Serie has been created',
+		SE_102: 'Serie has been updated',
+		SE_103: 'Serie image has been updated'
 	},
 	user: {
 		US_001: 'User not exist in the database',

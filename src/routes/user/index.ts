@@ -250,52 +250,59 @@ class account extends accountCRUD {
 			return hasError.res;
 
 		if (!req.body.token) {
-			const user = await UserController.findOne(req.body.name)
-				.catch(() => next(new Error(getInfo('GE_001').message)));
-			if (!user || user.verify) {
-				return error(req, res,
-					(!user)
-						? 'US_001'
-						: 'US_003'
-				).res;
-			}
-			const token = generateToken();
-			user.verify = false;
-			user.token = token.token;
-			user.token_deadline = token.deadline;
-			await UserController.update(user)
-				.catch(() => next(new Error(getInfo('GE_001').message)));
-			mailSystem.accountVerification(user.email, { token: String(user.token) })
-				.catch(() => next(new Error(getInfo('GE_002').message)));
-			return success(req, res, 'US_102', {
-				data: {
-					mailSend: true
+			let user: User | null = null;
+			try {
+				user = await UserController.findOne(req.body.name);
+				if (!user || user.verify) {
+					return error(req, res,
+						(!user)
+							? 'US_001'
+							: 'US_003'
+					).res;
 				}
-			}).res;
+				const token = generateToken();
+				user.verify = false;
+				user.token = token.token;
+				user.token_deadline = token.deadline;
+				await UserController.update(user);
+				
+			} catch {
+				return next(new Error(getInfo('GE_001').message));
+			}
+
+			try {
+				await mailSystem.accountVerification(user.email, { token: String(user.token) });
+			} catch {
+				return next(new Error(getInfo('GE_002').message));
+			}
+			return success(req, res, 'US_102', { data: { mailSend: true } }).res;
 		} else {
 			if (isEmpty(String(req.body.token)))
 				return error(req, res, 'RE_002', { data: { key: 'token' } }).res;
 			if (!isNumeric(String(req.body.token)) || String(req.body.token).length !== 8)
 				return error(req, res, 'US_008').res;
-			const user = await UserController.findOne(req.body.name)
-				.catch(() => next(new Error(getInfo('GE_001').message)));
-			if (!user || user.verify) {
-				return error(req, res,
-					(!user)
-						? 'US_001'
-						: 'US_003'
-				).res;
+			
+			try {
+				const user = await UserController.findOne(req.body.name);
+				if (!user || user.verify) {
+					return error(req, res,
+						(!user)
+							? 'US_001'
+							: 'US_003'
+					).res;
+				}
+				const currentDate = new Date();
+				if (!user.token_deadline)
+					return next(new Error(getInfo('US_010').message));
+				if (currentDate.getTime() > user.token_deadline.getTime())
+					return error(req, res, 'US_009').res;
+				if (user.token !== Number(req.body.token))
+					return error(req, res, 'US_010').res;
+				user.verify = true;
+				await UserController.update(user);
+			} catch {
+				return next(new Error(getInfo('GE_001').message));
 			}
-			const currentDate = new Date();
-			if (!user.token_deadline)
-				return next(new Error(getInfo('US_010').message));
-			if (currentDate.getTime() > user.token_deadline.getTime())
-				return error(req, res, 'US_009').res;
-			if (user.token !== Number(req.body.token))
-				return error(req, res, 'US_010').res;
-			user.verify = true;
-			await UserController.update(user)
-				.catch(() => next(new Error(getInfo('GE_001').message)));
 			return success(req, res, 'US_103').res;
 		}
 	}

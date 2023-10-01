@@ -22,6 +22,7 @@ import type { Application, NextFunction, Request, Response } from 'express';
 	app.use(cookieParser());
 	app.use(helmet());
 	app.use(hpp());
+	// app.use(express.static(resolve(__dirname, '/public')));
 	app.use((_req: Request, res: Response, next: NextFunction): void => {
 		res.setHeader('Vary', 'Origin');
 		next();

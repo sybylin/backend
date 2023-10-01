@@ -30,6 +30,15 @@ const list: {
 		AC_102: 'L\'utilisateur a ce succès',
 		AC_103: 'L\'utilisateur n\'a pas ce succès'
 	},
+	series: {
+		SE_001: 'Une série existe déjà sous ce nom',
+		SE_002: 'La création d\'une série a échoué, contacter l\'administrateur',
+		SE_003: 'L\'utilisateur n\'a pas les droits nécessaires pour éditer cette série',
+
+		SE_101: 'La série a été créée',
+		SE_102: 'La série a été mise à jour',
+		SE_103: 'L\'image de la série a été mise à jour'
+	},
 	user: {
 		US_001: 'Utilisateur inexistant dans la base de données',
 		US_002: 'Mot de passe incorrect',

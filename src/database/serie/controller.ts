@@ -107,4 +107,18 @@ export default class controller {
 		}) !== null
 		);
 	}
+
+	static async updatePart(serie_id: number, part: 'title' | 'description' | 'points' | 'image', data: string | number): Promise<boolean> {
+		const obj: Record<string, string | number> = {};
+		obj[part] = data;
+		return await serie.update({
+			where: {
+				id: serie_id
+			},
+			data: obj,
+			select: {
+				id: true
+			}
+		}) !== null;
+	}
 }

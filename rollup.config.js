@@ -10,6 +10,7 @@ export default {
 		'util', 'express-rate-limit', '@prisma/client',
 		'validator/lib/isEmail', 'validator/lib/normalizeEmail',
 		'validator/lib/isEmpty', 'validator/lib/isNumeric',
+		'magic-bytes.js', 'multer'
 	],
 	input: 'src/index.ts',
 	output: [
