@@ -133,19 +133,5 @@ export default Router()
 	.post('/update/image',
 		jwtMiddleware.acceptUser,
 		uploadSerieLogo.middleware.single('image'),
-		uploadSerieLogo.checkMimetype,
-		async (req, res, next) => {
-			console.log(req.file);
-			console.log(req.files);
-
-			next();
-			/*if (!Object.keys(req.body).length)
-				return error(req, res, 'RE_001').res;
-			if (!req.body.serie_id || typeof req.body.serie_id !== 'number')
-				return error(req, res, 'RE_002', { data: { key: 'serie_id' } }).res;
-			if (!await SerieController.thisSerieIsCreatedByUser(Number(req.body.serie_id), req.user.id))
-				return error(req, res, 'SE_003').res;
-			success(req, res, 'SE_102', { data: { payload: req.files } });
-			*/
-		}
+		uploadSerieLogo.check
 	);

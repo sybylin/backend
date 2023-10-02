@@ -14,7 +14,10 @@ const list: {
 	request: {
 		RE_001: 'Le corps de la requête est vide',
 		RE_002: 'La clé n\'est pas présente dans le corps de la requête ou est vide',
-		RE_003: 'La clé n\'est pas présente dans les paramètres'
+		RE_003: 'La clé n\'est pas présente dans les paramètres',
+		RE_004: 'Aucun fichier n\'est présent dans la requête',
+		RE_005: 'Aucun fichiers ne sont présent dans la requête',
+		RE_006: 'Le type de fichier n\'est pas autorisé'
 	},
 	jwt: {
 		JW_001: 'jwt est invalide',

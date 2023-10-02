@@ -108,17 +108,24 @@ export default class controller {
 		);
 	}
 
-	static async updatePart(serie_id: number, part: 'title' | 'description' | 'points' | 'image', data: string | number): Promise<boolean> {
+	static async updatePart(serie_id: number, part: 'title' | 'description' | 'points' | 'image', data: string | number): Promise<unknown> {
 		const obj: Record<string, string | number> = {};
+		const select: Record<string, boolean> = {};
 		obj[part] = data;
-		return await serie.update({
+		select[part] = true;
+		const ret = await serie.findUnique({
+			where: {
+				id: serie_id
+			},
+			select
+		});
+		await serie.update({
 			where: {
 				id: serie_id
 			},
 			data: obj,
-			select: {
-				id: true
-			}
-		}) !== null;
+			select
+		});
+		return ret;
 	}
 }

@@ -14,7 +14,10 @@ const list: {
 	request: {
 		RE_001: 'Request body is empty',
 		RE_002: 'Key is not present in the request body or is empty',
-		RE_003: 'Key is not present in the params'
+		RE_003: 'Key is not present in the params',
+		RE_004: 'No file is present in the request',
+		RE_005: 'No files are present in the request',
+		RE_006: 'The file type is not authorized'
 	},
 	jwt: {
 		JW_001: 'jwt is invalid',

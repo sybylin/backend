@@ -1,13 +1,21 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { randomBytes } from 'crypto';
-import { open, read, existsSync, mkdirSync } from 'fs';
-import { rm } from 'fs/promises';
-import { extname, resolve } from 'path/posix';
+import {existsSync, mkdirSync } from 'fs';
+import { rm, open } from 'fs/promises';
+import { extname, join, resolve } from 'path/posix';
 import multer from 'multer';
-import { filetypename } from 'magic-bytes.js';
-import { log } from './log';
+import filetype from 'file-type';
+import isNumeric from 'validator/lib/isNumeric';
+import { error, success } from '@/code/format';
+import SerieController from 'database/serie/controller';
 
 import type { Request, Response, NextFunction } from 'express';
-import { success } from '@/code/format';
+import type core from 'file-type/core';
+
+interface uploadMiddleware {
+	middleware: multer.Multer;
+	check: (req: Request, res: Response, next: NextFunction) => Promise<void | Response>;
+}
 
 /**
  * Create public dir
@@ -17,10 +25,42 @@ const uploadPath: Record<string, string> = {
 	user: resolve('.', 'public', 'user'),
 	serie: resolve('.', 'public', 'serie')
 };
+
 for (const el in uploadPath) {
 	if (!existsSync(uploadPath[el]))
 		mkdirSync(uploadPath[el], { recursive: true });
 }
+
+const serieModificationIsAuthorized = async (req: Request, res: Response) => {
+	if (!Object.keys(req.body).length)
+		return error(req, res, 'RE_001').res;
+	if (!req.body.serie_id || typeof req.body.serie_id === 'string' && !isNumeric(req.body.serie_id))
+		return error(req, res, 'RE_002', { data: { key: 'serie_id' } }).res;
+	if (!Object.keys(req.file as any).length && !req.files?.length)
+		return error(req, res, 'RE_004').res;
+	if (!await SerieController.thisSerieIsCreatedByUser(Number(req.body.serie_id), req.user.id))
+		return error(req, res, 'SE_003').res;
+};
+
+const mimetypeIsAuthorized = async (filePath: string, filter: string[]): Promise<boolean> =>
+	new Promise((reso, reje) => {
+		const buffer = Buffer.alloc(100);
+		open(filePath, 'r')
+			.then(async (fileHandle) => {
+				await fileHandle.read(buffer, 0, 100, 0);
+				const fileType = await filetype.fromBuffer(buffer);
+				if (!filetype) {
+					rm(filePath, { force: true });
+					reje('RE_006');
+				} else
+					reso(filter.includes((fileType as core.FileTypeResult).ext));
+				fileHandle.close();
+			})
+			.catch(async () => {
+				rm(filePath, { force: true });
+				reje();
+			});
+	});
 
 /**
  * Middlewares for handle image upload (jpeg & png)
@@ -49,36 +89,23 @@ export const uploadSerieLogo = {
 			['image/jpeg', 'image/png'].includes(file.mimetype.trim().toLowerCase())
 		)
 	}),
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	checkMimetype: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-		if (!Object.keys(req.file as any).length && !req.files?.length)
-			next('No file or files in request');
-		try {
-			const buffer = Buffer.alloc(100);
-			const filepath = resolve(uploadPath.serie, (req.file as Express.Multer.File).filename);
-			const sendErr = (err: NodeJS.ErrnoException | null) => {
-				if (err) {
-					log.error(err.message);
-					throw new Error(err.message);
-				}
-			};
+	check: async (req: Request, res: Response, next: NextFunction): Promise<void | Response> => {
+		const filepath = resolve(uploadPath.serie, (req.file as Express.Multer.File).filename);
+		const genFilePath = join('/', 'public', 'serie', (req.file as Express.Multer.File).filename);
 
-			open(filepath, 'r', (err, fd) => {
-				sendErr(err);
-				// eslint-disable-next-line @typescript-eslint/no-unused-vars
-				read(fd, buffer, 0, 100, 0, (err, _num) => {
-					sendErr(err);
-					const info = filetypename(buffer);
-					if (!info || (!info.includes('jpg') && !info.includes('png'))) {
-						rm(filepath, { force: true });
-						return next('Filetype forbidden');
-					}
-					return success(req, res, 'SE_103');
-				});
-			});
-		} catch (e) {
-			log.error(e);
-			next();
+		serieModificationIsAuthorized(req, res);
+		try {
+			if (!await mimetypeIsAuthorized(filepath, ['jpg', 'png']))
+				error(req, res, 'RE_006');
+			const oldName = await SerieController.updatePart(Number(req.body.serie_id), 'image', genFilePath) as Record<'image', string>;
+			if (!oldName)
+				return error(req, res, 'GE_001').res;
+			rm(resolve('.', (oldName.image.charAt(0) === '/')
+				? oldName.image.slice(1)
+				: oldName.image), { force: true });
+			return success(req, res, 'SE_103', { data: { path: genFilePath } }).res;
+		} catch {
+			return error(req, res, 'GE_001').res;
 		}
 	}
-};
+} as uploadMiddleware;
