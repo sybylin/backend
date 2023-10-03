@@ -140,9 +140,6 @@ export const uploadUserImage = {
 	check: async (req: Request, res: Response, next: NextFunction): Promise<void | Response> => {
 		const filepath = resolve(uploadPath.user, (req.file as Express.Multer.File).filename);
 		const genFilePath = join('/', 'public', 'user', (req.file as Express.Multer.File).filename);
-
-		console.log('hello world');
-
 		serieModificationIsAuthorized(req, res);
 		try {
 			if (!await mimetypeIsAuthorized(filepath, ['jpg', 'png']))

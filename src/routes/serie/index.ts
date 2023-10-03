@@ -6,6 +6,7 @@ import isEmpty from 'validator/lib/isEmpty';
 import { error, success } from 'code/format';
 import { uploadSerieLogo } from '@/lib/upload';
 import SerieController from 'database/serie/controller';
+import SerieEnigmaOrderController from 'database/serieEnigmaOrder/controller';
 import SerieCreationController from 'database/serieCreator/controller';
 import type { Request, Response, NextFunction } from 'express';
 import type { Serie } from '@prisma/client';
@@ -118,6 +119,22 @@ class serie extends serieCRUD {
 			}
 		}).res;
 	}
+
+	static async updateEnigmaOrder(req: Request, res: Response, next: NextFunction) {
+		if (!Object.keys(req.body).length)
+			return error(req, res, 'RE_001').res;
+		if (!req.body.serie_id || typeof req.body.serie_id !== 'number')
+			return error(req, res, 'RE_002', { data: { key: 'serie_id' } }).res;
+		if (!req.body.order || typeof req.body.order !== 'object')
+			return error(req, res, 'RE_002', { data: { key: 'order' } }).res;
+		if (!await SerieController.thisSerieIsCreatedByUser(Number(req.body.serie_id), req.user.id))
+			return error(req, res, 'SE_003').res;
+		return success(req, res, 'SE_102', {
+			data: {
+				isUpdated: await SerieEnigmaOrderController.updateOrder(req.body.order)
+			}
+		}).res;
+	}
 }
 
 export default Router()
@@ -127,6 +144,7 @@ export default Router()
 	.post('/isCreatedByUser', jwtMiddleware.acceptUser, serie.thisSerieIsCreatedByUser)
 	.post('/one', jwtMiddleware.acceptUser, serie.findOne)
 
+	.post('/update/order', jwtMiddleware.acceptUser, serie.updateEnigmaOrder)
 	.post('/update/title', jwtMiddleware.acceptUser, (req, res, next) => serie.updatePart('title', req, res, next))
 	.post('/update/description', jwtMiddleware.acceptUser, (req, res, next) => serie.updatePart('description', req, res, next))
 	.post('/update/points', jwtMiddleware.acceptUser, (req, res, next) => serie.updatePart('points', req, res, next))

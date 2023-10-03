@@ -1,16 +1,14 @@
 import { Router } from 'express';
 import isEmpty from 'validator/lib/isEmpty';
 import isNumeric from 'validator/lib/isNumeric';
-
-import EnigmaController from 'database/enigma/controller';
-import EnigmaFinishedController from 'database/enigmaFinished/controller';
-import EnigmaSolutionController from 'database/enigmaSolution/controller';
 import { getInfo } from 'code/index';
 import { error, returnFormat, success } from 'code/format';
 import { jwtMiddleware } from 'lib/jwt';
-
+import SerieController from 'database/serie/controller';
+import EnigmaController from 'database/enigma/controller';
+import EnigmaFinishedController from 'database/enigmaFinished/controller';
+import EnigmaSolutionController from 'database/enigmaSolution/controller';
 import type { NextFunction, Request, Response } from 'express';
-
 
 /**
  * Verify is bitmasking, pass 1 or 0 for active/desactive check
@@ -59,6 +57,31 @@ const verifyRequest = (req: Request, res: Response, verify = '0000'): returnForm
 };
 
 class enigma {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	static async create(req: Request, res: Response, _next: NextFunction) {
+		if (!Object.keys(req.body).length)
+			return error(req, res, 'RE_001').res;
+		if (!req.body.serie_id || typeof req.body.serie_id !== 'number')
+			return error(req, res, 'RE_002', { data: { key: 'serie_id' } }).res;
+		if (!req.body.title || typeof req.body.title !== 'string')
+			return error(req, res, 'RE_002', { data: { key: 'title' } }).res;
+		if (!req.body.description || typeof req.body.description !== 'string')
+			return error(req, res, 'RE_002', { data: { key: 'description' } }).res;
+		if (!await SerieController.thisSerieIsCreatedByUser(Number(req.body.serie_id), req.user.id))
+			return error(req, res, 'SE_003').res;
+		return success(req, res, 'EN_102', {
+			data: {
+				enigma: await EnigmaController.create({
+					serie_id: Number(req.body.serie_id),
+					title: req.body.title,
+					image: null,
+					description: req.body.description,
+					points: 0
+				}, req.user.id)
+			}
+		}).res;
+	}
+
 	static get(req: Request<any>, res: Response<any>, next: NextFunction) {
 		const hasError = verifyRequest(req, res, '1000');
 		if (hasError)
@@ -159,6 +182,7 @@ class enigma {
 }
 
 export default Router()
+	.post('/create', jwtMiddleware.acceptUser, enigma.create)
 	.post('/one', jwtMiddleware.acceptUser, enigma.get)
 	.post('/all', jwtMiddleware.acceptUser, enigma.getAllOfSeries)
 	.post('/finished', jwtMiddleware.acceptUser, enigma.isFinished)

@@ -90,6 +90,29 @@ export default class controller {
 		});
 	}
 	
+	static async updateOrder(newOrder: { serie_id: number, enigma_id: number }[]): Promise<boolean | null> {
+		if (!newOrder || !newOrder.length)
+			return null;
+		
+		for (const [index, data] of newOrder.entries()) {
+			await serieEnigmaOrder.update({
+				where: {
+					serie_id_enigma_id: {
+						serie_id: data.serie_id,
+						enigma_id: data.enigma_id
+					}
+				},
+				data: {
+					order: index + 1,
+				},
+				select: {
+					order: true
+				}
+			});
+		}
+		return true;
+	}
+
 	static async delete(serie_id: number, enigma_id: number): Promise<SerieEnigmaOrder> {
 		return serieEnigmaOrder.delete({
 			where: {
