@@ -194,6 +194,29 @@ export default class controller {
 		return (update !== null);
 	}
 
+	static async updateAvatar(idOrName: number | string, avatar: string): Promise<{ avatar: string | null } | null> {
+		const ret = await user.findUnique({
+			where: (typeof idOrName === 'number')
+				? { id: idOrName }
+				: { name: idOrName },
+			select: {
+				avatar: true
+			}
+		});
+		await user.update({
+			where: (typeof idOrName === 'number')
+				? { id: idOrName }
+				: { name: idOrName },
+			data: {
+				avatar
+			},
+			select: {
+				avatar: true
+			}
+		});
+		return ret;
+	}
+
 	static delete(nameOrId: string | number): Promise<User> {
 		return user.delete({
 			where: (typeof nameOrId === 'number')

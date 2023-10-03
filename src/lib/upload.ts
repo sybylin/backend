@@ -7,6 +7,7 @@ import multer from 'multer';
 import filetype from 'file-type';
 import isNumeric from 'validator/lib/isNumeric';
 import { error, success } from '@/code/format';
+import UserController from 'database/user/controller';
 import SerieController from 'database/serie/controller';
 
 import type { Request, Response, NextFunction } from 'express';
@@ -31,15 +32,32 @@ for (const el in uploadPath) {
 		mkdirSync(uploadPath[el], { recursive: true });
 }
 
-const serieModificationIsAuthorized = async (req: Request, res: Response) => {
-	if (!Object.keys(req.body).length)
-		return error(req, res, 'RE_001').res;
-	if (!req.body.serie_id || typeof req.body.serie_id === 'string' && !isNumeric(req.body.serie_id))
-		return error(req, res, 'RE_002', { data: { key: 'serie_id' } }).res;
+const filenameGeneration = (
+	_req: Request,
+	file: Express.Multer.File,
+	cb: (error: Error | null, destination: string) => void
+) => {
+	const firstPart = randomBytes(32).toString('hex').slice(0, 32);
+	const getExtension = () => {
+		const extOriginName = extname(file.originalname);
+		return (!extOriginName || extOriginName.localeCompare('.') === 0)
+			? ''
+			: extOriginName;
+	};
+	cb(null, `${firstPart}${getExtension()}`);
+};
+
+const serieModificationIsAuthorized = async (req: Request, res: Response, checkSerieId = false) => {
+	if (checkSerieId) {
+		if (!Object.keys(req.body).length)
+			return error(req, res, 'RE_001').res;
+		if (!req.body.serie_id || typeof req.body.serie_id === 'string' && !isNumeric(req.body.serie_id))
+			return error(req, res, 'RE_002', { data: { key: 'serie_id' } }).res;
+		if (!await SerieController.thisSerieIsCreatedByUser(Number(req.body.serie_id), req.user.id))
+			return error(req, res, 'SE_003').res;
+	}
 	if (!Object.keys(req.file as any).length && !req.files?.length)
 		return error(req, res, 'RE_004').res;
-	if (!await SerieController.thisSerieIsCreatedByUser(Number(req.body.serie_id), req.user.id))
-		return error(req, res, 'SE_003').res;
 };
 
 const mimetypeIsAuthorized = async (filePath: string, filter: string[]): Promise<boolean> =>
@@ -63,23 +81,14 @@ const mimetypeIsAuthorized = async (filePath: string, filter: string[]): Promise
 	});
 
 /**
- * Middlewares for handle image upload (jpeg & png)
+ * Middlewares for handle image serie logo (jpeg & png)
  * Max size: 5 mb
  */
 export const uploadSerieLogo = {
 	middleware: multer({
 		storage: multer.diskStorage({
 			destination: (_req, _file, cb) => cb(null, uploadPath.serie),
-			filename: (_req, file, cb) => {
-				const firstPart = randomBytes(32).toString('hex').slice(0, 32);
-				const getExtension = () => {
-					const extOriginName = extname(file.originalname);
-					return (!extOriginName || extOriginName.localeCompare('.') === 0)
-						? ''
-						: extOriginName;
-				};
-				cb(null, `${firstPart}${getExtension()}`);
-			}
+			filename: filenameGeneration
 		}),
 		limits: {
 			fileSize: 5000000 /// 5mb
@@ -93,7 +102,7 @@ export const uploadSerieLogo = {
 		const filepath = resolve(uploadPath.serie, (req.file as Express.Multer.File).filename);
 		const genFilePath = join('/', 'public', 'serie', (req.file as Express.Multer.File).filename);
 
-		serieModificationIsAuthorized(req, res);
+		serieModificationIsAuthorized(req, res, true);
 		try {
 			if (!await mimetypeIsAuthorized(filepath, ['jpg', 'png']))
 				error(req, res, 'RE_006');
@@ -103,6 +112,47 @@ export const uploadSerieLogo = {
 			rm(resolve('.', (oldName.image.charAt(0) === '/')
 				? oldName.image.slice(1)
 				: oldName.image), { force: true });
+			return success(req, res, 'SE_103', { data: { path: genFilePath } }).res;
+		} catch {
+			return error(req, res, 'GE_001').res;
+		}
+	}
+} as uploadMiddleware;
+
+/**
+ * Middlewares for handle image serie logo (jpeg & png)
+ * Max size: 5 mb
+ */
+export const uploadUserImage = {
+	middleware: multer({
+		storage: multer.diskStorage({
+			destination: (_req, _file, cb) => cb(null, uploadPath.user),
+			filename: filenameGeneration
+		}),
+		limits: {
+			fileSize: 5000000 /// 5mb
+		},
+		fileFilter: (_req, file, cb) => cb(
+			null,
+			['image/jpeg', 'image/png'].includes(file.mimetype.trim().toLowerCase())
+		)
+	}),
+	check: async (req: Request, res: Response, next: NextFunction): Promise<void | Response> => {
+		const filepath = resolve(uploadPath.user, (req.file as Express.Multer.File).filename);
+		const genFilePath = join('/', 'public', 'user', (req.file as Express.Multer.File).filename);
+
+		console.log('hello world');
+
+		serieModificationIsAuthorized(req, res);
+		try {
+			if (!await mimetypeIsAuthorized(filepath, ['jpg', 'png']))
+				error(req, res, 'RE_006');
+			const oldName = await UserController.updateAvatar(req.user.id, genFilePath);
+			if (!oldName || !oldName.avatar)
+				return error(req, res, 'GE_001').res;
+			rm(resolve('.', (oldName.avatar.charAt(0) === '/')
+				? oldName.avatar.slice(1)
+				: oldName.avatar), { force: true });
 			return success(req, res, 'SE_103', { data: { path: genFilePath } }).res;
 		} catch {
 			return error(req, res, 'GE_001').res;

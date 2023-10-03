@@ -19,6 +19,7 @@ import { initPasswordReset, resetPassword } from './resetPassword';
 import type { NextFunction, Response } from 'express';
 import type { User } from '@prisma/client';
 import type { UserRequest } from './interface';
+import { uploadUserImage } from '@/lib/upload';
 
 class accountCRUD {
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -361,7 +362,12 @@ export default Router()
 	.post('/role', jwtMiddleware.acceptAdministrator, account.updateRole)
 	.post('/reset/init', initPasswordReset)
 	.post('/reset/update', resetPassword)
-
+	
 	.put('/', jwtMiddleware.acceptUser, account.update)
+	.put('/image',
+		jwtMiddleware.acceptUser,
+		uploadUserImage.middleware.single('image'),
+		uploadUserImage.check
+	)
 
 	.delete('/', jwtMiddleware.acceptUser, account.delete);
