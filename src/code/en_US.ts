@@ -17,7 +17,8 @@ const list: {
 		RE_003: 'Key is not present in the params',
 		RE_004: 'No file is present in the request',
 		RE_005: 'No files are present in the request',
-		RE_006: 'The file type is not authorized'
+		RE_006: 'The file type is not authorized',
+		RE_007: 'Request params is empty',
 	},
 	jwt: {
 		JW_001: 'jwt is invalid',
@@ -40,7 +41,8 @@ const list: {
 
 		SE_101: 'Serie has been created',
 		SE_102: 'Serie has been updated',
-		SE_103: 'Serie image has been updated'
+		SE_103: 'Serie image has been updated',
+		SE_104: 'Serie has been deleted'
 	},
 	user: {
 		US_001: 'User not exist in the database',
@@ -73,6 +75,8 @@ const list: {
 	enigma: {
 		EN_001: 'Incorrect id',
 		EN_002: 'Incorrect enigma and/or user id',
+		EN_003: 'Enigma creation failed',
+		EN_004: 'A enigma already exists with this name',
 
 		EN_101: 'Enigma',
 		EN_102: 'Enigmas',

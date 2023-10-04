@@ -47,6 +47,7 @@ model Enigma {
 	points							Int									@default(0)
 	creation_date				DateTime?						@default(now())
 	modification_date		DateTime?						@updatedAt
+	@@unique([serie_id, title])
 	//// relations
 	serie_enigma_order	SerieEnigmaOrder[]
 
@@ -104,7 +105,7 @@ model Token {
 	deadline						DateTime
 	@@unique([user_id, token])
 	//// relations
-	user								User								@relation(fields: [user_id], references: [id])
+	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 // #endregion Main tables
 
@@ -114,8 +115,8 @@ model AchievementCreator {
 	user_id							Int
 	@@unique([achievement_id, user_id])
 	//// relations
-	achievement					Achievement					@relation(fields: [achievement_id], references: [id])
-	user								User								@relation(fields: [user_id], references: [id])
+	achievement					Achievement					@relation(fields: [achievement_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 // #endregion Achievement
 
@@ -125,8 +126,8 @@ model EnigmaCreator {
 	user_id							Int
 	@@unique([enigma_id, user_id])
 	//// relations
-	enigma							Enigma							@relation(fields: [enigma_id], references: [id])
-	user								User								@relation(fields: [user_id], references: [id])
+	enigma							Enigma							@relation(fields: [enigma_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model EnigmaFinished {
@@ -135,8 +136,8 @@ model EnigmaFinished {
 	completion_date			DateTime?						@default(now())
 	@@unique([enigma_id, user_id])
 	//// relations
-	enigma							Enigma							@relation(fields: [enigma_id], references: [id])
-	user								User								@relation(fields: [user_id], references: [id])
+	enigma							Enigma							@relation(fields: [enigma_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model EnigmaSolution {
@@ -144,7 +145,7 @@ model EnigmaSolution {
 	type								Solution						@default(STRING)
 	solution						String
 	//// relations
-	enigma							Enigma							@relation(fields: [enigma_id], references: [id])
+	enigma							Enigma							@relation(fields: [enigma_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 // #endregion Enigma
 
@@ -154,8 +155,8 @@ model SerieCreator {
 	user_id							Int
 	@@unique([serie_id, user_id])
 	//// relations
-	serie								Serie							@relation(fields: [serie_id], references: [id])
-	user								User								@relation(fields: [user_id], references: [id])
+	serie								Serie							@relation(fields: [serie_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model SerieEnigmaOrder {
@@ -164,8 +165,8 @@ model SerieEnigmaOrder {
 	order								Int
 	@@unique([serie_id, enigma_id])
 	//// relations
-	serie								Serie							@relation(fields: [serie_id], references: [id])
-	enigma							Enigma							@relation(fields: [enigma_id], references: [id])
+	serie								Serie							@relation(fields: [serie_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	enigma							Enigma							@relation(fields: [enigma_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model SerieFinished {
@@ -174,8 +175,8 @@ model SerieFinished {
 	completion_date			DateTime?						@default(now())
 	@@unique([serie_id, user_id])
 	//// relations
-	serie								Serie							@relation(fields: [serie_id], references: [id])
-	user								User								@relation(fields: [user_id], references: [id])
+	serie								Serie							@relation(fields: [serie_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 // #endregion Serie
 
@@ -186,8 +187,8 @@ model UserAchievement {
 	unlocking_date			DateTime?						@default(now())
 	@@unique([user_id, achievement_id])
 	//// relations
-	user								User								@relation(fields: [user_id], references: [id])
-	achievement					Achievement					@relation(fields: [achievement_id], references: [id])
+	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	achievement					Achievement					@relation(fields: [achievement_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model UserResetPassword {
@@ -196,6 +197,6 @@ model UserResetPassword {
 	deadline						DateTime
 	@@unique([user_id, token])
 	//// relations
-	user								User								@relation(fields: [user_id], references: [id])
+	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 // #endregion User

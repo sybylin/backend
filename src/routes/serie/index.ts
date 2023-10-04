@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { jwtMiddleware } from '@/lib/jwt';
 import { Router } from 'express';
-import { isString } from 'lodash';
+import { isNumber, isString } from 'lodash';
 import isEmpty from 'validator/lib/isEmpty';
 import { error, success } from 'code/format';
 import { uploadSerieLogo } from '@/lib/upload';
@@ -10,6 +10,7 @@ import SerieEnigmaOrderController from 'database/serieEnigmaOrder/controller';
 import SerieCreationController from 'database/serieCreator/controller';
 import type { Request, Response, NextFunction } from 'express';
 import type { Serie } from '@prisma/client';
+import isNumeric from 'validator/lib/isNumeric';
 
 interface SerieCreateRequest extends Request {
 	body: {
@@ -65,7 +66,18 @@ class serieCRUD {
 	}
 
 	static async delete(req: Request, res: Response, next: NextFunction) {
-		
+		if (!Object.keys(req.params).length)
+			return error(req, res, 'RE_007').res;
+		if (!req.params.id || !isNumeric(req.params.id))
+			return error(req, res, 'RE_003', { data: { key: 'id' } }).res;
+		const id = Number(req.params.id);
+		if (!await SerieController.thisSerieIsCreatedByUser(id, req.user.id))
+			return error(req, res, 'SE_003').res;
+		return success(req, res, 'SE_104', {
+			data: {
+				serieDelete: await SerieController.delete(id)
+			}
+		}).res;
 	}
 }
 
@@ -152,4 +164,6 @@ export default Router()
 		jwtMiddleware.acceptUser,
 		uploadSerieLogo.middleware.single('image'),
 		uploadSerieLogo.check
-	);
+	)
+
+	.delete('/:id', jwtMiddleware.acceptUser, serie.delete);

@@ -5,10 +5,13 @@ import { getInfo } from 'code/index';
 import { error, returnFormat, success } from 'code/format';
 import { jwtMiddleware } from 'lib/jwt';
 import SerieController from 'database/serie/controller';
+import SerieEnigmaOrder from 'database/serieEnigmaOrder/controller';
 import EnigmaController from 'database/enigma/controller';
+import EnigmaCreatorController from 'database/enigmaCreator/controller';
 import EnigmaFinishedController from 'database/enigmaFinished/controller';
 import EnigmaSolutionController from 'database/enigmaSolution/controller';
 import type { NextFunction, Request, Response } from 'express';
+import type { Enigma } from '@prisma/client';
 
 /**
  * Verify is bitmasking, pass 1 or 0 for active/desactive check
@@ -63,21 +66,45 @@ class enigma {
 			return error(req, res, 'RE_001').res;
 		if (!req.body.serie_id || typeof req.body.serie_id !== 'number')
 			return error(req, res, 'RE_002', { data: { key: 'serie_id' } }).res;
+		if (!req.body.order || typeof req.body.order !== 'number')
+			return error(req, res, 'RE_002', { data: { key: 'order' } }).res;
 		if (!req.body.title || typeof req.body.title !== 'string')
 			return error(req, res, 'RE_002', { data: { key: 'title' } }).res;
 		if (!req.body.description || typeof req.body.description !== 'string')
 			return error(req, res, 'RE_002', { data: { key: 'description' } }).res;
 		if (!await SerieController.thisSerieIsCreatedByUser(Number(req.body.serie_id), req.user.id))
 			return error(req, res, 'SE_003').res;
+
+		let enigma: Enigma | null = null;
+		let isError = false;
+		try {
+			enigma = await EnigmaController.create({
+				serie_id: Number(req.body.serie_id),
+				title: req.body.title,
+				image: null,
+				description: req.body.description,
+				points: 0
+			});
+		} catch {
+			isError = true;
+		}
+		if (!enigma || isError)
+			return error(req, res, 'EN_004').res;
+
+		try {
+			if (enigma) {
+				await EnigmaCreatorController.create({ enigma_id: enigma.id, user_id: req.user.id });
+				await SerieEnigmaOrder.create({ serie_id: Number(req.body.serie_id), enigma_id: enigma.id, order: Number(req.body.order) });
+			}
+		} catch {
+			isError = true;
+		}
+		if (isError)
+			return error(req, res, 'GE_001').res;
+
 		return success(req, res, 'EN_102', {
 			data: {
-				enigma: await EnigmaController.create({
-					serie_id: Number(req.body.serie_id),
-					title: req.body.title,
-					image: null,
-					description: req.body.description,
-					points: 0
-				}, req.user.id)
+				enigma
 			}
 		}).res;
 	}

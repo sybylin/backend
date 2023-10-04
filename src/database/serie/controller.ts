@@ -1,4 +1,4 @@
-import { serie } from 'database/db.instance';
+import { serie, enigma } from 'database/db.instance';
 import { Serie } from '@prisma/client';
 	
 export default class controller {
@@ -34,7 +34,7 @@ export default class controller {
 			}
 		});
 	}
-	
+
 	static async findAll(): Promise<Serie[] | null> {
 		return serie.findMany();
 	}
@@ -55,17 +55,18 @@ export default class controller {
 		});
 	}
 	
-	static async delete(idOrTitle: number | string): Promise<Serie> {
-		if (typeof(idOrTitle) === 'number') {
-			return serie.delete({
-				where: {
-					id: idOrTitle
-				}
-			});
-		}
+	static async delete(id: number): Promise<{ id: number }> {
+		await enigma.deleteMany({
+			where: {
+				serie_id: id
+			}
+		});
 		return serie.delete({
 			where: {
-				title: idOrTitle
+				id
+			},
+			select: {
+				id: true
 			}
 		});
 	}
