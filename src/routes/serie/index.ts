@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { jwtMiddleware } from '@/lib/jwt';
+import asyncHandler from '@/lib/asyncHandler';
 import { Router } from 'express';
-import { isNumber, isString } from 'lodash';
+import { isString } from 'lodash';
 import isEmpty from 'validator/lib/isEmpty';
 import { error, success } from 'code/format';
 import { uploadSerieLogo } from '@/lib/upload';
@@ -20,7 +21,6 @@ interface SerieCreateRequest extends Request {
 }
 
 class serieCRUD {
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	static async create(req: SerieCreateRequest, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
@@ -57,15 +57,7 @@ class serieCRUD {
 		}).res;
 	}
 
-	static async read(req: Request, res: Response, next: NextFunction) {
-		
-	}
-
-	static async update(req: Request, res: Response, next: NextFunction) {
-		
-	}
-
-	static async delete(req: Request, res: Response, next: NextFunction) {
+	static async delete(req: Request, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.params).length)
 			return error(req, res, 'RE_007').res;
 		if (!req.params.id || !isNumeric(req.params.id))
@@ -82,7 +74,7 @@ class serieCRUD {
 }
 
 class serie extends serieCRUD {
-	static async findOne(req: Request, res: Response, next: NextFunction) {
+	static async findOne(req: Request, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
 		if (!req.body.serie_id)
@@ -132,7 +124,7 @@ class serie extends serieCRUD {
 		}).res;
 	}
 
-	static async updateEnigmaOrder(req: Request, res: Response, next: NextFunction) {
+	static async updateEnigmaOrder(req: Request, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
 		if (!req.body.serie_id || typeof req.body.serie_id !== 'number')
@@ -150,20 +142,15 @@ class serie extends serieCRUD {
 }
 
 export default Router()
-	.get('/createByUser', jwtMiddleware.acceptUser, serie.getCreatedByUser)
+	.get('/createByUser', jwtMiddleware.acceptUser, asyncHandler(serie.getCreatedByUser))
 
-	.post('/create', jwtMiddleware.acceptUser, serie.create)
-	.post('/isCreatedByUser', jwtMiddleware.acceptUser, serie.thisSerieIsCreatedByUser)
-	.post('/one', jwtMiddleware.acceptUser, serie.findOne)
+	.post('/create', jwtMiddleware.acceptUser, asyncHandler(serie.create))
+	.post('/isCreatedByUser', jwtMiddleware.acceptUser, asyncHandler(serie.thisSerieIsCreatedByUser))
+	.post('/one', jwtMiddleware.acceptUser, asyncHandler(serie.findOne))
+	.post('/update/order', jwtMiddleware.acceptUser, asyncHandler(serie.updateEnigmaOrder))
+	.post('/update/title', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.updatePart('title', req, res, next)))
+	.post('/update/description', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.updatePart('description', req, res, next)))
+	.post('/update/points', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.updatePart('points', req, res, next)))
+	.post('/update/image', jwtMiddleware.acceptUser, uploadSerieLogo.middleware.single('image'), asyncHandler(uploadSerieLogo.check))
 
-	.post('/update/order', jwtMiddleware.acceptUser, serie.updateEnigmaOrder)
-	.post('/update/title', jwtMiddleware.acceptUser, (req, res, next) => serie.updatePart('title', req, res, next))
-	.post('/update/description', jwtMiddleware.acceptUser, (req, res, next) => serie.updatePart('description', req, res, next))
-	.post('/update/points', jwtMiddleware.acceptUser, (req, res, next) => serie.updatePart('points', req, res, next))
-	.post('/update/image',
-		jwtMiddleware.acceptUser,
-		uploadSerieLogo.middleware.single('image'),
-		uploadSerieLogo.check
-	)
-
-	.delete('/:id', jwtMiddleware.acceptUser, serie.delete);
+	.delete('/:id', jwtMiddleware.acceptUser, asyncHandler(serie.delete));

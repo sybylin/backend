@@ -1,7 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Router } from 'express';
 import isEmpty from 'validator/lib/isEmpty';
 import isNumeric from 'validator/lib/isNumeric';
-import { getInfo } from 'code/index';
 import { error, returnFormat, success } from 'code/format';
 import { jwtMiddleware } from 'lib/jwt';
 import SerieController from 'database/serie/controller';
@@ -61,7 +61,6 @@ const verifyRequest = (req: Request, res: Response, verify = '0000'): returnForm
 };
 
 class enigmaCRUD {
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	static async create(req: Request, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
@@ -76,33 +75,17 @@ class enigmaCRUD {
 		if (!await SerieController.thisSerieIsCreatedByUser(Number(req.body.serie_id), req.user.id))
 			return error(req, res, 'SE_003').res;
 
-		let enigma: Enigma | null = null;
-		let isError = false;
-		try {
-			enigma = await EnigmaController.create({
-				serie_id: Number(req.body.serie_id),
-				title: req.body.title,
-				image: null,
-				description: req.body.description,
-				points: 0
-			});
-		} catch {
-			isError = true;
-		}
-		if (!enigma || isError)
+		const enigma = await EnigmaController.create({
+			serie_id: Number(req.body.serie_id),
+			title: req.body.title,
+			image: null,
+			description: req.body.description,
+			points: 0
+		});
+		if (!enigma)
 			return error(req, res, 'EN_004').res;
-
-		try {
-			if (enigma) {
-				await EnigmaCreatorController.create({ enigma_id: enigma.id, user_id: req.user.id });
-				await SerieEnigmaOrder.create({ serie_id: Number(req.body.serie_id), enigma_id: enigma.id, order: Number(req.body.order) });
-			}
-		} catch {
-			isError = true;
-		}
-		if (isError)
-			return error(req, res, 'GE_001').res;
-
+		await EnigmaCreatorController.create({ enigma_id: enigma.id, user_id: req.user.id });
+		await SerieEnigmaOrder.create({ serie_id: Number(req.body.serie_id), enigma_id: enigma.id, order: Number(req.body.order) });
 		return success(req, res, 'EN_102', {
 			data: {
 				enigma
@@ -110,26 +93,22 @@ class enigmaCRUD {
 		}).res;
 	}
 
-	static async get(req: Request<any>, res: Response<any>, next: NextFunction) {
+	static async get(req: Request<any>, res: Response<any>, _next: NextFunction) {
 		const hasError = verifyRequest(req, res, '1000');
 		if (hasError)
 			return hasError.res;
-	
-		try {
-			const enigma = await EnigmaController.findOne(Number(req.body.id));
-			const isCreator = await EnigmaCreatorController.findOne(Number(req.body.id), req.user.id);
-			return success(req, res, 'EN_101', {
-				data: {
-					isCreator: isCreator !== null,
-					enigma,
-				}
-			}).res;
-		} catch (e) {
-			return next(new Error(getInfo('GE_001').message));
-		}
+		
+		const enigma = await EnigmaController.findOne(Number(req.body.id));
+		const isCreator = await EnigmaCreatorController.findOne(Number(req.body.id), req.user.id);
+		return success(req, res, 'EN_101', {
+			data: {
+				isCreator: isCreator !== null,
+				enigma,
+			}
+		}).res;
 	}
 
-	static async update(req: Request<any>, res: Response<any>, next: NextFunction) {
+	static async update(req: Request<any>, res: Response<any>, _next: NextFunction) {
 		const hasError = verifyRequest(req, res, '1000');
 		if (hasError)
 			return hasError.res;
@@ -144,87 +123,79 @@ class enigmaCRUD {
 				points: enigma.points,
 				creation_date: null,
 				modification_date: null
-			})
-				.catch(() => next(new Error(getInfo('GE_002').message)));
+			});
 		}
 	}
 
-	static async delete(req: Request<any>, res: Response<any>, next: NextFunction) {
+	static async delete(req: Request<any>, res: Response<any>, _next: NextFunction) {
 		const hasError = verifyRequest(req, res, '1000');
 		if (hasError)
 			return hasError.res;
-		EnigmaController.delete(req.body.id)
-			.then(() => success(req, res, 'AC_106').res)
-			.catch(() => next(new Error(getInfo('GE_002').message)));
+		await EnigmaController.delete(req.body.id);
+		return success(req, res, 'AC_106').res;
 	}
 
 }
 
 class enigma extends enigmaCRUD {
-	static async isCreator(req: Request, res: Response, next: NextFunction) {
+	static async isCreator(req: Request, res: Response, _next: NextFunction) {
 		const isCreator = await EnigmaCreatorController.findOne(Number(req.body.id), req.user.id);
-		console.log('hello', isCreator);
-		next();
+		return success(req, res, isCreator
+			? 'EN_105'
+			: 'EN_005', {
+			data: {
+				isCreator
+			}
+		});
 	}
 
-	static async getAllOfSeries(req: Request<any>, res: Response<any>, next: NextFunction) {
+	static async getAllOfSeries(req: Request<any>, res: Response<any>, _next: NextFunction) {
 		const hasError = verifyRequest(req, res, '0100');
 		if (hasError)
 			return hasError.res;
-		try {
-			const enigmas = await EnigmaController.findAll(Number(req.body.serie_id));
-			if (!enigmas)
-				return error(req, res, 'EN_001').res;
-			return success(req, res, 'EN_102', {
-				data: {
-					enigmas
-				}
-			}).res;
-		} catch (e) {
-			next(new Error(getInfo('GE_001').message));
-		}
+		const enigmas = await EnigmaController.findAll(Number(req.body.serie_id));
+		if (!enigmas)
+			return error(req, res, 'EN_001').res;
+		return success(req, res, 'EN_102', {
+			data: {
+				enigmas
+			}
+		}).res;
 	}
 
-	static isFinished(req: Request<any>, res: Response<any>, next: NextFunction) {
+	static async isFinished(req: Request<any>, res: Response<any>, _next: NextFunction) {
 		const hasError = verifyRequest(req, res, '1010');
 		if (hasError)
 			return hasError.res;
 
-		EnigmaFinishedController.isFinished(req.body.id, req.body.user_id)
-			.then((d) => {
-				if (!d)
-					return error(req, res, 'EN_002').res;
-				return success(req, res, 'EN_103', {
-					data: {
-						isFinished: d
-					}
-				}).res;
-			})
-			.catch(() => next(new Error(getInfo('GE_001').message)));
+		const isFinished = await EnigmaFinishedController.isFinished(req.body.id, req.body.user_id);
+		if (!isFinished)
+			return error(req, res, 'EN_002').res;
+		return success(req, res, 'EN_103', {
+			data: {
+				isFinished
+			}
+		}).res;
 	}
 
-	static verifySolution(req: Request<any>, res: Response<any>, next: NextFunction) {
+	static async verifySolution(req: Request<any>, res: Response<any>, _next: NextFunction) {
 		const hasError = verifyRequest(req, res, '1001');
 		if (hasError)
 			return hasError.res;
-
-		EnigmaSolutionController.checkSolution(req.body.id, req.body.solution)
-			.then((d) => {
-				return success(req, res, 'EN_104', {
-					data: {
-						isCorrect: d
-					}
-				}).res;
-			})
-			.catch(() => next(new Error(getInfo('GE_001').message)));
+		const isCorrect = await EnigmaSolutionController.checkSolution(req.body.id, req.body.solution);
+		return success(req, res, 'EN_104', {
+			data: {
+				isCorrect
+			}
+		}).res;
 	}
 }
 
 export default Router()
 	.get('/isCreator', jwtMiddleware.acceptUser, asyncHandler(enigma.isCreator))
 
-	.post('/create', jwtMiddleware.acceptUser, enigma.create)
-	.post('/one', jwtMiddleware.acceptUser, enigma.get)
-	.post('/all', jwtMiddleware.acceptUser, enigma.getAllOfSeries)
-	.post('/finished', jwtMiddleware.acceptUser, enigma.isFinished)
-	.post('/check', jwtMiddleware.acceptUser, enigma.verifySolution);
+	.post('/create', jwtMiddleware.acceptUser, asyncHandler(enigma.create))
+	.post('/one', jwtMiddleware.acceptUser, asyncHandler(enigma.get))
+	.post('/all', jwtMiddleware.acceptUser, asyncHandler(enigma.getAllOfSeries))
+	.post('/finished', jwtMiddleware.acceptUser, asyncHandler(enigma.isFinished))
+	.post('/check', jwtMiddleware.acceptUser, asyncHandler(enigma.verifySolution));

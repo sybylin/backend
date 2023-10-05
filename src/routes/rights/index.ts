@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { success } from 'code/format';
 import { jwtMiddleware } from 'lib/jwt';
-
 import type { Request, Response, NextFunction } from 'express';
 
 const successfulIdentification = (

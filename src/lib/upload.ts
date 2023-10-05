@@ -103,19 +103,15 @@ export const uploadSerieLogo = {
 		const genFilePath = join('/', 'public', 'serie', (req.file as Express.Multer.File).filename);
 
 		serieModificationIsAuthorized(req, res, true);
-		try {
-			if (!await mimetypeIsAuthorized(filepath, ['jpg', 'png']))
-				error(req, res, 'RE_006');
-			const oldName = await SerieController.updatePart(Number(req.body.serie_id), 'image', genFilePath) as Record<'image', string>;
-			if (!oldName)
-				return error(req, res, 'GE_001').res;
-			rm(resolve('.', (oldName.image.charAt(0) === '/')
-				? oldName.image.slice(1)
-				: oldName.image), { force: true });
-			return success(req, res, 'SE_103', { data: { path: genFilePath } }).res;
-		} catch {
+		if (!await mimetypeIsAuthorized(filepath, ['jpg', 'png']))
+			error(req, res, 'RE_006');
+		const oldName = await SerieController.updatePart(Number(req.body.serie_id), 'image', genFilePath) as Record<'image', string>;
+		if (!oldName)
 			return error(req, res, 'GE_001').res;
-		}
+		rm(resolve('.', (oldName.image.charAt(0) === '/')
+			? oldName.image.slice(1)
+			: oldName.image), { force: true });
+		return success(req, res, 'SE_103', { data: { path: genFilePath } }).res;
 	}
 } as uploadMiddleware;
 
@@ -141,18 +137,15 @@ export const uploadUserImage = {
 		const filepath = resolve(uploadPath.user, (req.file as Express.Multer.File).filename);
 		const genFilePath = join('/', 'public', 'user', (req.file as Express.Multer.File).filename);
 		serieModificationIsAuthorized(req, res);
-		try {
-			if (!await mimetypeIsAuthorized(filepath, ['jpg', 'png']))
-				error(req, res, 'RE_006');
-			const oldName = await UserController.updateAvatar(req.user.id, genFilePath);
-			if (!oldName || !oldName.avatar)
-				return error(req, res, 'GE_001').res;
-			rm(resolve('.', (oldName.avatar.charAt(0) === '/')
-				? oldName.avatar.slice(1)
-				: oldName.avatar), { force: true });
-			return success(req, res, 'SE_103', { data: { path: genFilePath } }).res;
-		} catch {
+
+		if (!await mimetypeIsAuthorized(filepath, ['jpg', 'png']))
+			error(req, res, 'RE_006');
+		const oldName = await UserController.updateAvatar(req.user.id, genFilePath);
+		if (!oldName || !oldName.avatar)
 			return error(req, res, 'GE_001').res;
-		}
+		rm(resolve('.', (oldName.avatar.charAt(0) === '/')
+			? oldName.avatar.slice(1)
+			: oldName.avatar), { force: true });
+		return success(req, res, 'SE_103', { data: { path: genFilePath } }).res;
 	}
 } as uploadMiddleware;

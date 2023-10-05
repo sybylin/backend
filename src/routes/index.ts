@@ -18,6 +18,7 @@ export default (app: Application): void => {
 	app.use('/rights', apiLimiter, rights);
 	app.use('/serie', apiLimiter, serie);
 	app.use('/user', apiLimiter, user);
+
 	/// 404
 	app.use((req: Request, res: Response) => {
 		res.status(404);
@@ -27,12 +28,13 @@ export default (app: Application): void => {
 			res.type('txt').send(JSON.stringify(info(404), null, 2));
 		res.send();
 	});
+
 	/// 500 JSON
 	app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 		if (err instanceof SyntaxError && 'body' in err)
 			return res.status(400).send({ message: err }).send();
 		else
-			next();
+			next(err);
 	});
 	/// 500
 	app.use(error500.middleware);

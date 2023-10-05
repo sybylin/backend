@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Router } from 'express';
 import isEmpty from 'validator/lib/isEmpty';
 import isNumeric from 'validator/lib/isNumeric';
@@ -20,6 +21,7 @@ import type { NextFunction, Response } from 'express';
 import type { User } from '@prisma/client';
 import type { UserRequest } from './interface';
 import { uploadUserImage } from '@/lib/upload';
+import asyncHandler from '@/lib/asyncHandler';
 
 class accountCRUD {
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -150,16 +152,9 @@ class accountCRUD {
 		const hasError = verifyRequest(req, res, true, false);
 		if (hasError)
 			return hasError.res;
-
-		try {
-			const accountCheck = await UserController.check(req.body.name, req.body.password);
-			if (!accountCheck)
-				throw new Error();
-			await UserController.delete(req.body.name);
-		} catch(e) {
+		if (!await UserController.check(req.body.name, req.body.password))
 			return error(req, res, 'US_001').res;
-		}
-
+		await UserController.delete(req.body.name);
 		return success(req, res, 'US_106', {
 			data: {
 				name: req.body.name
@@ -198,7 +193,7 @@ class account extends accountCRUD {
 		return error(req, res, 'US_001');
 	}
 
-	static async checkUser(req: UserRequest, res: Response<any>, next: NextFunction) {
+	static async checkUser(req: UserRequest, res: Response<any>, _next: NextFunction) {
 		const hasError = verifyRequest(req, res, true, false);
 		if (hasError)
 			return hasError.res;
@@ -223,87 +218,66 @@ class account extends accountCRUD {
 			}).res;
 		}
 
-		try {
-			const user = await UserController.cleanFindOne(req.body.name);
-			if (!user)
-				return error(req, res, 'US_001').res;
-			req.user = user;
-			await checkAchievement(req, res, 'firstConnection', { user_id: user.id, latest_connection_date: (check.data as any).last_connection });
-			return success(req, res,
-				'US_101',
-				{
-					data: {
-						userNotExist: false,
-						incorrectPassword: false
-					}
-				},
-				await generateJwtToken(user.id, user.name, req.body.remember ?? false)
-			).res;
-		} catch (e) {
-			log.error(e);
-			return next(new Error(getInfo('GE_001').message));
-		}
+		const user = await UserController.cleanFindOne(req.body.name);
+		if (!user)
+			return error(req, res, 'US_001').res;
+		req.user = user;
+		await checkAchievement(req, res, 'firstConnection', { user_id: user.id, latest_connection_date: (check.data as any).last_connection });
+		return success(req, res,
+			'US_101',
+			{
+				data: {
+					userNotExist: false,
+					incorrectPassword: false
+				}
+			},
+			await generateJwtToken(user.id, user.name, req.body.remember ?? false)
+		).res;
 	}
 
 	static async token(req: UserRequest, res: Response<any>, next: NextFunction) {
 		const hasError = verifyRequest(req, res, false, false);
 		if (hasError)
 			return hasError.res;
-
 		if (!req.body.token) {
-			let user: User | null = null;
-			try {
-				user = await UserController.findOne(req.body.name);
-				if (!user || user.verify) {
-					return error(req, res,
-						(!user)
-							? 'US_001'
-							: 'US_003'
-					).res;
-				}
-				const token = generateToken();
-				user.verify = false;
-				user.token = token.token;
-				user.token_deadline = token.deadline;
-				await UserController.update(user);
-				
-			} catch {
-				return next(new Error(getInfo('GE_001').message));
+			const user = await UserController.findOne(req.body.name);
+			if (!user || user.verify) {
+				return error(req, res,
+					(!user)
+						? 'US_001'
+						: 'US_003'
+				).res;
 			}
+			const token = generateToken();
+			user.verify = false;
+			user.token = token.token;
+			user.token_deadline = token.deadline;
+			await UserController.update(user);
 
-			try {
-				await mailSystem.accountVerification(user.email, { token: String(user.token) });
-			} catch {
-				return next(new Error(getInfo('GE_002').message));
-			}
+			await mailSystem.accountVerification(user.email, { token: String(user.token) });
 			return success(req, res, 'US_102', { data: { mailSend: true } }).res;
 		} else {
 			if (isEmpty(String(req.body.token)))
 				return error(req, res, 'RE_002', { data: { key: 'token' } }).res;
 			if (!isNumeric(String(req.body.token)) || String(req.body.token).length !== 8)
 				return error(req, res, 'US_008').res;
-			
-			try {
-				const user = await UserController.findOne(req.body.name);
-				if (!user || user.verify) {
-					return error(req, res,
-						(!user)
-							? 'US_001'
-							: 'US_003'
-					).res;
-				}
-				const currentDate = new Date();
-				if (!user.token_deadline)
-					return next(new Error(getInfo('US_010').message));
-				if (currentDate.getTime() > user.token_deadline.getTime())
-					return error(req, res, 'US_009').res;
-				if (user.token !== Number(req.body.token))
-					return error(req, res, 'US_010').res;
-				user.verify = true;
-				await UserController.update(user);
-			} catch {
-				return next(new Error(getInfo('GE_001').message));
+			const user = await UserController.findOne(req.body.name);
+			if (!user || user.verify) {
+				return error(req, res,
+					(!user)
+						? 'US_001'
+						: 'US_003'
+				).res;
 			}
+			const currentDate = new Date();
+			if (!user.token_deadline)
+				return next(new Error(getInfo('US_010').message));
+			if (currentDate.getTime() > user.token_deadline.getTime())
+				return error(req, res, 'US_009').res;
+			if (user.token !== Number(req.body.token))
+				return error(req, res, 'US_010').res;
+			user.verify = true;
+			await UserController.update(user);
 			return success(req, res, 'US_103').res;
 		}
 	}
@@ -351,23 +325,23 @@ class account extends accountCRUD {
 }
 
 export default Router()
-	.get('/', jwtMiddleware.acceptUser, account.getHisInfo)
-	.get('/points', jwtMiddleware.acceptUser, account.getPoints)
-	.get('/logout', jwtMiddleware.acceptUser, account.logout)
-	.get('/get/:name', jwtMiddleware.acceptUser, account.getUser)
+	.get('/', jwtMiddleware.acceptUser, asyncHandler(account.getHisInfo))
+	.get('/points', jwtMiddleware.acceptUser, asyncHandler(account.getPoints))
+	.get('/logout', jwtMiddleware.acceptUser, asyncHandler(account.logout))
+	.get('/get/:name', jwtMiddleware.acceptUser, asyncHandler(account.getUser))
 
-	.post('/create', account.create)
-	.post('/check', account.checkUser)
-	.post('/token', account.token)
-	.post('/role', jwtMiddleware.acceptAdministrator, account.updateRole)
-	.post('/reset/init', initPasswordReset)
-	.post('/reset/update', resetPassword)
+	.post('/create', asyncHandler(account.create))
+	.post('/check', asyncHandler(account.checkUser))
+	.post('/token', asyncHandler(account.token))
+	.post('/role', jwtMiddleware.acceptAdministrator, asyncHandler(account.updateRole))
+	.post('/reset/init', asyncHandler(initPasswordReset))
+	.post('/reset/update', asyncHandler(resetPassword))
 	
-	.put('/', jwtMiddleware.acceptUser, account.update)
+	.put('/', jwtMiddleware.acceptUser, asyncHandler(account.update))
 	.put('/image',
 		jwtMiddleware.acceptUser,
 		uploadUserImage.middleware.single('image'),
-		uploadUserImage.check
+		asyncHandler(uploadUserImage.check)
 	)
 
-	.delete('/', jwtMiddleware.acceptUser, account.delete);
+	.delete('/', jwtMiddleware.acceptUser, asyncHandler(account.delete));

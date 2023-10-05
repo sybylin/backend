@@ -4,11 +4,19 @@ import nodemailer from 'nodemailer';
 import { log } from 'lib/log';
 import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 
-export type MailReturn = Promise<boolean | Error>;
+export type MailReturn = Promise<boolean>;
 export interface MailInfo {
 	from?: string;
 	to: string;
 	subject: string;
+}
+
+export class MailError extends Error {
+	public code = 500;
+
+	constructor(message: string) {
+		super(message);
+	}
 }
 
 export class Mail {
@@ -82,13 +90,13 @@ export class Mail {
 				html: this.formatString(mailData, args ?? {})
 			}, (err, info) => {
 				if (err)
-					return rej(err);
+					return rej(new MailError(err.message));
 				if (info.accepted && info.accepted.length) {
 					log.info('Mail send with id', info.messageId);
 					return res(true);
 				}
 				log.info('Mail rejected with id', info.messageId);
-				return rej(new Error('Mail rejected'));
+				return rej(new MailError('Mail rejected'));
 			});
 		});
 	}

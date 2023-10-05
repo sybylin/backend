@@ -77,11 +77,13 @@ const list: {
 		EN_002: 'Incorrect enigma and/or user id',
 		EN_003: 'Enigma creation failed',
 		EN_004: 'A enigma already exists with this name',
+		EN_005: 'User does not have the necessary rights to edit this enigma',
 
 		EN_101: 'Enigma',
 		EN_102: 'Enigmas',
 		EN_103: 'Enigma finished',
-		EN_104: 'Enigma solution'
+		EN_104: 'Enigma solution',
+		EN_105: 'User have the necessary rights to edit this enigma',
 	}
 };
 

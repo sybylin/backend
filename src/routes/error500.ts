@@ -1,5 +1,6 @@
 import { error } from '@/code/format';
 import { log } from '@/lib/log.js';
+import { MailError } from '@/lib/mail';
 import { Prisma } from '@prisma/client';
 import type { Request, Response, NextFunction } from 'express';
 
@@ -40,6 +41,16 @@ export default class error500 {
 		400);
 	}
 
+	static isPrismaError(err: BackendError): boolean {
+		return [
+			'PrismaClientKnownRequestError',
+			'PrismaClientUnknownRequestError',
+			'PrismaClientRustPanicError',
+			'PrismaClientInitializationError',
+			'PrismaClientValidationError'
+		].includes(err.constructor.name);
+	}
+
 	static devError (err: BackendError, req: Request, res: Response): Response {
 		log.error(err);
 		return error(req, res, 'GE_001', {
@@ -59,14 +70,11 @@ export default class error500 {
 		}).res;
 	}
 
-	static isPrismaError(err: BackendError): boolean {
-		return [
-			'PrismaClientKnownRequestError',
-			'PrismaClientUnknownRequestError',
-			'PrismaClientRustPanicError',
-			'PrismaClientInitializationError',
-			'PrismaClientValidationError'
-		].includes(err.constructor.name);
+	static mailError(err: MailError, req: Request, res: Response): Response {
+		log.error(err);
+		return error(req, res, 'GE_002', {
+			status: err.code
+		}).res;
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -77,6 +85,8 @@ export default class error500 {
 		else {
 			if (error500.isPrismaError(err))
 				error500.devError(error500.prisma(err as any), req, res);
+			else if (err.constructor.name === 'MailError')
+				error500.mailError(err, req, res);
 			else if (error.name === 'JsonWebTokenError') 
 				error500.devError(error500.jwt(), req, res);
 			else if (error.name === 'TokenExpiredError') 
