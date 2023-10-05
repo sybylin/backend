@@ -4,9 +4,9 @@
   "license": "MIT",
   "scripts": {
     "dev:build": "rollup --watch --bundleConfigAsCjs --config rollup.config.js",
-    "dev:serve": "nodemon --delay 2000ms dist/index.cjs.js",
+    "dev:serve": "SET NODE_ENV=development&& nodemon --delay 2000ms dist/index.cjs.js",
     "build": "yarn prisma:prod:schema && yarn mjmlBuild && rollup --bundleConfigAsCjs --config rollup.config.js",
-    "serve": "node dist/index.cjs.js",
+    "serve": "SET NODE_ENV=production&& node dist/index.cjs.js",
     "mjml:build": "mjml ./mail/*.mjml -o ./mail/dist/ --config.minify true",
     "mjml:lint": "mjml ./mail/*.mjml --config.validationLevel strict",
     "prisma:prod": "prisma migrate deploy && yarn serve",

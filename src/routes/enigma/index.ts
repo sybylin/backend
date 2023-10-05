@@ -12,6 +12,7 @@ import EnigmaFinishedController from 'database/enigmaFinished/controller';
 import EnigmaSolutionController from 'database/enigmaSolution/controller';
 import type { NextFunction, Request, Response } from 'express';
 import type { Enigma } from '@prisma/client';
+import asyncHandler from '@/lib/asyncHandler';
 
 /**
  * Verify is bitmasking, pass 1 or 0 for active/desactive check
@@ -59,8 +60,8 @@ const verifyRequest = (req: Request, res: Response, verify = '0000'): returnForm
 	return null;
 };
 
-class enigma {
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+class enigmaCRUD {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	static async create(req: Request, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
@@ -109,21 +110,23 @@ class enigma {
 		}).res;
 	}
 
-	static get(req: Request<any>, res: Response<any>, next: NextFunction) {
+	static async get(req: Request<any>, res: Response<any>, next: NextFunction) {
 		const hasError = verifyRequest(req, res, '1000');
 		if (hasError)
 			return hasError.res;
-		EnigmaController.findOne(Number(req.body.id))
-			.then((d) => {
-				if (!d)
-					return error(req, res, 'EN_001').res;
-				return success(req, res, 'EN_101', {
-					data: {
-						...d
-					}
-				}).res;
-			})
-			.catch(() => next(new Error(getInfo('GE_001').message)));
+	
+		try {
+			const enigma = await EnigmaController.findOne(Number(req.body.id));
+			const isCreator = await EnigmaCreatorController.findOne(Number(req.body.id), req.user.id);
+			return success(req, res, 'EN_101', {
+				data: {
+					isCreator: isCreator !== null,
+					enigma,
+				}
+			}).res;
+		} catch (e) {
+			return next(new Error(getInfo('GE_001').message));
+		}
 	}
 
 	static async update(req: Request<any>, res: Response<any>, next: NextFunction) {
@@ -153,6 +156,15 @@ class enigma {
 		EnigmaController.delete(req.body.id)
 			.then(() => success(req, res, 'AC_106').res)
 			.catch(() => next(new Error(getInfo('GE_002').message)));
+	}
+
+}
+
+class enigma extends enigmaCRUD {
+	static async isCreator(req: Request, res: Response, next: NextFunction) {
+		const isCreator = await EnigmaCreatorController.findOne(Number(req.body.id), req.user.id);
+		console.log('hello', isCreator);
+		next();
 	}
 
 	static async getAllOfSeries(req: Request<any>, res: Response<any>, next: NextFunction) {
@@ -209,6 +221,8 @@ class enigma {
 }
 
 export default Router()
+	.get('/isCreator', jwtMiddleware.acceptUser, asyncHandler(enigma.isCreator))
+
 	.post('/create', jwtMiddleware.acceptUser, enigma.create)
 	.post('/one', jwtMiddleware.acceptUser, enigma.get)
 	.post('/all', jwtMiddleware.acceptUser, enigma.getAllOfSeries)

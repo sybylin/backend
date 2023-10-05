@@ -39,7 +39,6 @@ function resFormat(
 		info,
 		...options?.data
 	};
-
 	if (isError)
 		log.error(`[${statusCode}]`, info.message);
 	else
