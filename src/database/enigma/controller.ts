@@ -64,6 +64,27 @@ export default class controller {
 		});
 	}
 
+	static async updatePart(enigma_id: number, part: 'title' | 'description' | 'points' | 'image', data: string | number): Promise<unknown> {
+		const obj: Record<string, string | number> = {};
+		const select: Record<string, boolean> = {};
+		obj[part] = data;
+		select[part] = true;
+		const ret = await enigma.findUnique({
+			where: {
+				id: enigma_id
+			},
+			select
+		});
+		await enigma.update({
+			where: {
+				id: enigma_id
+			},
+			data: obj,
+			select
+		});
+		return ret;
+	}
+
 	static async delete(id: number): Promise<Enigma> {
 		return enigma.delete({
 			where: {

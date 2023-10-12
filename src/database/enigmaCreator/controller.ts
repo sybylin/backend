@@ -54,4 +54,18 @@ export default class controller {
 	static async isFinished(enigma_id: number, user_id: number): Promise<boolean> {
 		return (await this.findOne(enigma_id, user_id) !== null);
 	}
+
+	static async thisEnigmaIsCreatedByUser(enigma_id: number, user_id: number): Promise<boolean> {
+		return (await enigmaCreator.findUnique({
+			where: {
+				enigma_id_user_id: {
+					enigma_id,
+					user_id
+				}
+			},
+			select: {
+				enigma_id: true
+			}
+		}) !== null);
+	}
 }

@@ -113,7 +113,8 @@ export default class controller {
 					: { name: nameOrId },
 				select: {
 					id: true,
-					password: true
+					password: true,
+					last_connection: true
 				}
 			})
 				.then((d) => {

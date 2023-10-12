@@ -28,6 +28,11 @@ export type Enigma = {
     creation_date: Generated<Timestamp | null>;
     modification_date: Timestamp | null;
 };
+export type EnigmaContent = {
+    enigma_id: number;
+    development: string;
+    production: string;
+};
 export type EnigmaCreator = {
     enigma_id: number;
     user_id: number;
@@ -99,6 +104,7 @@ export type DB = {
     Achievement: Achievement;
     AchievementCreator: AchievementCreator;
     Enigma: Enigma;
+    EnigmaContent: EnigmaContent;
     EnigmaCreator: EnigmaCreator;
     EnigmaFinished: EnigmaFinished;
     EnigmaSolution: EnigmaSolution;

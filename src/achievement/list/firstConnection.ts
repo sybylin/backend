@@ -2,6 +2,7 @@ import UserAchievementController from 'database/userAchievement/controller';
 import { UserAchievement } from '@prisma/client';
 import Achievement from 'src/achievement/abstractAchievementClass';
 import type { Response } from 'express';
+import { log } from '@/lib/log';
 
 interface FirstConnectionCheckAchievement {
 	user_id: number;
@@ -19,9 +20,7 @@ class FirstConnection extends Achievement {
 				user_id: data.user_id,
 				achievement_id: this.id
 			})
-				.catch(() => {
-					///
-				});
+				.catch((e) => log.error(e));
 			if (check) {
 				this.add(res);
 				return true;

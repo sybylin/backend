@@ -48,6 +48,7 @@ model Enigma {
 	//// relations
 	serie_enigma_order	SerieEnigmaOrder[]
 
+	enigma_content			EnigmaContent?
 	enigma_solution			EnigmaSolution?
 	enigma_finished			EnigmaFinished[]
 	enigma_creator			EnigmaCreator[]
@@ -135,6 +136,14 @@ model EnigmaFinished {
 	//// relations
 	enigma							Enigma							@relation(fields: [enigma_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model EnigmaContent {
+	enigma_id						Int									@unique
+	development					String
+	production					String
+	//// relations
+	enigma							Enigma							@relation(fields: [enigma_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model EnigmaSolution {

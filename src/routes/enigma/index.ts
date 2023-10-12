@@ -11,8 +11,8 @@ import EnigmaCreatorController from 'database/enigmaCreator/controller';
 import EnigmaFinishedController from 'database/enigmaFinished/controller';
 import EnigmaSolutionController from 'database/enigmaSolution/controller';
 import type { NextFunction, Request, Response } from 'express';
-import type { Enigma } from '@prisma/client';
 import asyncHandler from '@/lib/asyncHandler';
+import { getListOfEnigmaContentImage, uploadEnigmaContentImage, uploadEnigmaLogo } from '@/lib/upload';
 
 /**
  * Verify is bitmasking, pass 1 or 0 for active/desactive check
@@ -99,7 +99,7 @@ class enigmaCRUD {
 			return hasError.res;
 		
 		const enigma = await EnigmaController.findOne(Number(req.body.id));
-		const isCreator = await EnigmaCreatorController.findOne(Number(req.body.id), req.user.id);
+		const isCreator = await EnigmaCreatorController.thisEnigmaIsCreatedByUser(enigma?.id ?? -1, req.user.id);
 		return success(req, res, 'EN_101', {
 			data: {
 				isCreator: isCreator !== null,
@@ -138,8 +138,8 @@ class enigmaCRUD {
 }
 
 class enigma extends enigmaCRUD {
-	static async isCreator(req: Request, res: Response, _next: NextFunction) {
-		const isCreator = await EnigmaCreatorController.findOne(Number(req.body.id), req.user.id);
+	static async getCreatedByUser(req: Request, res: Response, _next: NextFunction) {
+		const isCreator = await EnigmaCreatorController.thisEnigmaIsCreatedByUser(Number(req.body.id), req.user.id);
 		return success(req, res, isCreator
 			? 'EN_105'
 			: 'EN_005', {
@@ -189,13 +189,39 @@ class enigma extends enigmaCRUD {
 			}
 		}).res;
 	}
+
+	static async updatePart(part: 'title' | 'description' | 'points', req: Request, res: Response, _next: NextFunction) {
+		if (!Object.keys(req.body).length)
+			return error(req, res, 'RE_001').res;
+		if (!req.body.enigma_id || typeof req.body.enigma_id !== 'number')
+			return error(req, res, 'RE_002', { data: { key: 'enigma_id' } }).res;
+		if (!req.body[part])
+			return error(req, res, 'RE_002', { data: { key: part } }).res;
+		if (part === 'points' && typeof req.body[part] !== 'number' || req.body[part] < 0 || req.body[part] > 5000)
+			return error(req, res, 'RE_002', { data: { key: part } }).res;
+		if (!await EnigmaCreatorController.thisEnigmaIsCreatedByUser(Number(req.body.enigma_id), req.user.id))
+			return error(req, res, 'SE_003').res;
+		return success(req, res, 'SE_102', {
+			data: {
+				isUpdated: await EnigmaController.updatePart(Number(req.body.enigma_id), part, req.body[part])
+			}
+		}).res;
+	}
 }
 
 export default Router()
-	.get('/isCreator', jwtMiddleware.acceptUser, asyncHandler(enigma.isCreator))
+	.post('/createByUser', jwtMiddleware.acceptUser, asyncHandler(enigma.getCreatedByUser))
 
 	.post('/create', jwtMiddleware.acceptUser, asyncHandler(enigma.create))
 	.post('/one', jwtMiddleware.acceptUser, asyncHandler(enigma.get))
 	.post('/all', jwtMiddleware.acceptUser, asyncHandler(enigma.getAllOfSeries))
 	.post('/finished', jwtMiddleware.acceptUser, asyncHandler(enigma.isFinished))
-	.post('/check', jwtMiddleware.acceptUser, asyncHandler(enigma.verifySolution));
+	.post('/check', jwtMiddleware.acceptUser, asyncHandler(enigma.verifySolution))
+
+	.post('/update/title', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.updatePart('title', req, res, next)))
+	.post('/update/description', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.updatePart('description', req, res, next)))
+	.post('/update/points', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.updatePart('points', req, res, next)))
+	.post('/update/image', jwtMiddleware.acceptUser, uploadEnigmaLogo.middleware.single('image'), asyncHandler(uploadEnigmaLogo.check))
+
+	.get('/content/list', jwtMiddleware.acceptUser, asyncHandler(getListOfEnigmaContentImage))
+	.post('/content/image', jwtMiddleware.acceptUser, uploadEnigmaContentImage.middleware.single('image'), asyncHandler(uploadEnigmaContentImage.check));
