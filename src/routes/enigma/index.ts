@@ -4,15 +4,16 @@ import isEmpty from 'validator/lib/isEmpty';
 import isNumeric from 'validator/lib/isNumeric';
 import { error, returnFormat, success } from 'code/format';
 import { jwtMiddleware } from 'lib/jwt';
+import asyncHandler from 'lib/asyncHandler';
+import { getListOfEnigmaContentImage, uploadEnigmaContentImage, uploadEnigmaLogo } from 'lib/upload';
 import SerieController from 'database/serie/controller';
 import SerieEnigmaOrder from 'database/serieEnigmaOrder/controller';
 import EnigmaController from 'database/enigma/controller';
+import EnigmaContentController from 'database/enigmaContent/controller';
 import EnigmaCreatorController from 'database/enigmaCreator/controller';
 import EnigmaFinishedController from 'database/enigmaFinished/controller';
 import EnigmaSolutionController from 'database/enigmaSolution/controller';
 import type { NextFunction, Request, Response } from 'express';
-import asyncHandler from '@/lib/asyncHandler';
-import { getListOfEnigmaContentImage, uploadEnigmaContentImage, uploadEnigmaLogo } from '@/lib/upload';
 
 /**
  * Verify is bitmasking, pass 1 or 0 for active/desactive check
@@ -207,6 +208,38 @@ class enigma extends enigmaCRUD {
 			}
 		}).res;
 	}
+
+	static async getPage(req: Request, res: Response, _next: NextFunction, devOrProd: 'dev' | 'prod') {
+		if (!Object.keys(req.body).length)
+			return error(req, res, 'RE_001').res;
+		if (!req.body.enigma_id || typeof req.body.enigma_id !== 'number')
+			return error(req, res, 'RE_002', { data: { key: 'enigma_id' } }).res;
+		if (devOrProd === 'dev' && !await EnigmaCreatorController.thisEnigmaIsCreatedByUser(Number(req.body.enigma_id), req.user.id))
+			return error(req, res, 'SE_003').res;
+		return success(req, res, 'SE_102', {
+			data: {
+				enigma: (devOrProd === 'dev')
+					? await EnigmaContentController.readDevelopment(req.body.enigma_id)
+					: await EnigmaContentController.readProduction(req.body.enigma_id)
+			}
+		}).res;
+	}
+
+	static async savePageEditor(req: Request, res: Response, _next: NextFunction, devOrProd: 'dev' | 'prod') {
+		if (!Object.keys(req.body).length)
+			return error(req, res, 'RE_001').res;
+		if (!req.body.enigma_id || typeof req.body.enigma_id !== 'number')
+			return error(req, res, 'RE_002', { data: { key: 'enigma_id' } }).res;
+		if (!req.body.editor_data)
+			return error(req, res, 'RE_002', { data: { key: 'editor_data' } }).res;
+		if (!await EnigmaCreatorController.thisEnigmaIsCreatedByUser(Number(req.body.enigma_id), req.user.id))
+			return error(req, res, 'SE_003').res;
+		return success(req, res, 'SE_102', {
+			data: {
+				isSaved: await EnigmaContentController.updatePart(req.body.enigma_id, req.body.editor_data, devOrProd) !== null
+			}
+		}).res;
+	}
 }
 
 export default Router()
@@ -218,10 +251,15 @@ export default Router()
 	.post('/finished', jwtMiddleware.acceptUser, asyncHandler(enigma.isFinished))
 	.post('/check', jwtMiddleware.acceptUser, asyncHandler(enigma.verifySolution))
 
+	.post('/page/get/dev', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.getPage(req, res, next, 'dev')))
+	.post('/page/get/prod', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.getPage(req, res, next, 'prod')))
+
 	.post('/update/title', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.updatePart('title', req, res, next)))
 	.post('/update/description', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.updatePart('description', req, res, next)))
 	.post('/update/points', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.updatePart('points', req, res, next)))
 	.post('/update/image', jwtMiddleware.acceptUser, uploadEnigmaLogo.middleware.single('image'), asyncHandler(uploadEnigmaLogo.check))
+	.post('/update/page/dev', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.savePageEditor(req, res, next, 'dev')))
+	.post('/update/page/prod', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.savePageEditor(req, res, next, 'prod')))
 
 	.get('/content/list', jwtMiddleware.acceptUser, asyncHandler(getListOfEnigmaContentImage))
 	.post('/content/image', jwtMiddleware.acceptUser, uploadEnigmaContentImage.middleware.single('image'), asyncHandler(uploadEnigmaContentImage.check));
