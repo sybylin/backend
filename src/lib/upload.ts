@@ -8,7 +8,7 @@ import filetype from 'file-type';
 import isNumeric from 'validator/lib/isNumeric';
 import { error, success } from '@/code/format';
 import UserController from 'database/user/controller';
-import SerieController from 'database/serie/controller';
+import SeriesController from 'database/series/controller';
 import Enigma from 'database/enigma/controller';
 import EnigmaCreator from 'database/enigmaCreator/controller';
 
@@ -28,7 +28,7 @@ const uploadPath: Record<string, string> = {
 	user: resolve('.', 'public', 'user'),
 	enigma: resolve('.', 'public', 'enigma'),
 	enigmaContent: resolve('.', 'public', 'enigmaContent'),
-	serie: resolve('.', 'public', 'serie')
+	series: resolve('.', 'public', 'series')
 };
 
 for (const el in uploadPath) {
@@ -55,9 +55,9 @@ const serieModificationIsAuthorized = async (req: Request, res: Response, checkS
 	if (checkSerieId) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.serie_id || typeof req.body.serie_id === 'string' && !isNumeric(req.body.serie_id))
-			return error(req, res, 'RE_002', { data: { key: 'serie_id' } }).res;
-		if (!await SerieController.thisSerieIsCreatedByUser(Number(req.body.serie_id), req.user.id))
+		if (!req.body.series_id || typeof req.body.series_id === 'string' && !isNumeric(req.body.series_id))
+			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
+		if (!await SeriesController.thisSeriesIsCreatedByUser(Number(req.body.series_id), req.user.id))
 			return error(req, res, 'SE_003').res;
 	}
 	if (!Object.keys(req.file as any).length && !req.files?.length)
@@ -106,13 +106,13 @@ const mimetypeIsAuthorized = async (filePath: string, filter: string[]): Promise
 	});
 
 /**
- * Middlewares for handle image serie logo (jpeg & png)
+ * Middlewares for handle image series logo (jpeg & png)
  * Max size: 5 mb
  */
-export const uploadSerieLogo = {
+export const uploadSeriesLogo = {
 	middleware: multer({
 		storage: multer.diskStorage({
-			destination: (_req, _file, cb) => cb(null, uploadPath.serie),
+			destination: (_req, _file, cb) => cb(null, uploadPath.series),
 			filename: filenameGeneration
 		}),
 		limits: {
@@ -124,13 +124,13 @@ export const uploadSerieLogo = {
 		)
 	}),
 	check: async (req: Request, res: Response, _next: NextFunction): Promise<void | Response> => {
-		const filepath = resolve(uploadPath.serie, (req.file as Express.Multer.File).filename);
-		const genFilePath = join('/', 'public', 'serie', (req.file as Express.Multer.File).filename);
+		const filepath = resolve(uploadPath.series, (req.file as Express.Multer.File).filename);
+		const genFilePath = join('/', 'public', 'series', (req.file as Express.Multer.File).filename);
 
 		serieModificationIsAuthorized(req, res, true);
 		if (!await mimetypeIsAuthorized(filepath, ['jpg', 'png']))
 			return error(req, res, 'RE_006').res;
-		const oldName = await SerieController.updatePart(Number(req.body.serie_id), 'image', genFilePath) as Record<'image', string>;
+		const oldName = await SeriesController.updatePart(Number(req.body.series_id), 'image', genFilePath) as Record<'image', string>;
 		if (!oldName)
 			return error(req, res, 'GE_001').res;
 		rmOldImage(oldName.image);
@@ -220,7 +220,7 @@ export const getListOfEnigmaContentImage = async (req: Request, res: Response, n
 };
 
 /**
- * Middlewares for handle image serie logo (jpeg & png)
+ * Middlewares for handle image series logo (jpeg & png)
  * Max size: 5 mb
  */
 export const uploadUserImage = {

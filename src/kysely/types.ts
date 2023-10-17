@@ -1,10 +1,10 @@
-import type { ColumnType } from "kysely";
+import type { ColumnType } from 'kysely';
 export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
-import type { Role, Solution } from "./enums";
+import type { Role, Solution } from './enums';
 
 export type Achievement = {
     id: Generated<number>;
@@ -20,7 +20,7 @@ export type AchievementCreator = {
 };
 export type Enigma = {
     id: Generated<number>;
-    serie_id: number;
+    series_id: number;
     title: string;
     image: string | null;
     description: string;
@@ -47,28 +47,34 @@ export type EnigmaSolution = {
     type: Generated<Solution>;
     solution: string;
 };
-export type Serie = {
+export type Series = {
     id: Generated<number>;
     title: string;
     image: string | null;
     description: string;
     points: Generated<number>;
+    published: Generated<boolean>;
     creation_date: Generated<Timestamp | null>;
     modification_date: Timestamp | null;
 };
-export type SerieCreator = {
-    serie_id: number;
+export type SeriesCreator = {
+    series_id: number;
     user_id: number;
 };
-export type SerieEnigmaOrder = {
-    serie_id: number;
+export type SeriesEnigmaOrder = {
+    series_id: number;
     enigma_id: number;
     order: number;
 };
-export type SerieFinished = {
-    serie_id: number;
+export type SeriesFinished = {
+    series_id: number;
     user_id: number;
     completion_date: Generated<Timestamp | null>;
+};
+export type SeriesStarted = {
+    series_id: number;
+    user_id: number;
+    started_date: Generated<Timestamp | null>;
 };
 export type Token = {
     user_id: number;
@@ -100,6 +106,11 @@ export type UserResetPassword = {
     token: string;
     deadline: Timestamp;
 };
+export type UserSeriesNotation = {
+    user_id: number;
+    series_id: number;
+    note: Generated<number>;
+};
 export type DB = {
     Achievement: Achievement;
     AchievementCreator: AchievementCreator;
@@ -108,12 +119,14 @@ export type DB = {
     EnigmaCreator: EnigmaCreator;
     EnigmaFinished: EnigmaFinished;
     EnigmaSolution: EnigmaSolution;
-    Serie: Serie;
-    SerieCreator: SerieCreator;
-    SerieEnigmaOrder: SerieEnigmaOrder;
-    SerieFinished: SerieFinished;
+    Series: Series;
+    SeriesCreator: SeriesCreator;
+    SeriesEnigmaOrder: SeriesEnigmaOrder;
+    SeriesFinished: SeriesFinished;
+    SeriesStarted: SeriesStarted;
     Token: Token;
     User: User;
     UserAchievement: UserAchievement;
     UserResetPassword: UserResetPassword;
+    UserSeriesNotation: UserSeriesNotation;
 };

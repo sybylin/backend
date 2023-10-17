@@ -33,42 +33,46 @@ model Achievement {
 	creation_date				DateTime?						@default(now())
 	modification_date		DateTime?						@updatedAt
 	//// relations
-	user_achievement		UserAchievement[]
-	
 	achievement_creator	AchievementCreator[]
+
+	user_achievement		UserAchievement[]
 }
 
 model Enigma {
 	id									Int									@id @default(autoincrement())
-	serie_id						Int
+	series_id						Int
 	title								String							@db.VarChar(255)
 	image								String?
 	description					String
 	points							Int									@default(0)
 	creation_date				DateTime?						@default(now())
 	modification_date		DateTime?						@updatedAt
-	@@unique([serie_id, title])
+	@@unique([series_id, title])
 	//// relations
-	serie_enigma_order	SerieEnigmaOrder[]
-
-	enigma_content			EnigmaContent?
-	enigma_solution			EnigmaSolution?
-	enigma_finished			EnigmaFinished[]
 	enigma_creator			EnigmaCreator[]
+	enigma_content			EnigmaContent?
+	enigma_finished			EnigmaFinished[]
+	enigma_solution			EnigmaSolution?
+
+	series_enigma_order	SeriesEnigmaOrder[]
 }
 
-model Serie {
+model Series {
 	id									Int									@id @default(autoincrement())
 	title								String							@unique
 	image								String?
 	description					String
 	points							Int									@default(0)
+	published						Boolean							@default(false)
 	creation_date				DateTime?						@default(now())
 	modification_date		DateTime?						@updatedAt
 	//// relations
-	serie_finished			SerieFinished[]
-	serie_enigma_order	SerieEnigmaOrder[]
-	serie_creator				SerieCreator[]
+	series_creator				SeriesCreator[]
+	series_enigma_order	SeriesEnigmaOrder[]
+	series_finished			SeriesFinished[]
+	series_started				SeriesStarted[]
+	
+	user_series_notation	UserSeriesNotation[]
 }
 
 model User {
@@ -85,16 +89,18 @@ model User {
 	creation_date				DateTime?						@default(now())
 	modification_date		DateTime?						@updatedAt
 	//// relations
-	serie_finished			SerieFinished[]
-	serie_creator				SerieCreator[]
+	achievement_creator	AchievementCreator[]
 
-	enigma_finished			EnigmaFinished[]
 	enigma_creator			EnigmaCreator[]
+	enigma_finished			EnigmaFinished[]
+
+	series_creator				SeriesCreator[]
+	series_finished			SeriesFinished[]
+	series_started				SeriesStarted[]
 
 	user_achievement		UserAchievement[]
 	user_reset_password	UserResetPassword[]
-
-	achievement_creator	AchievementCreator[]
+	user_series_notation	UserSeriesNotation[]
 
 	token_list					Token[]
 }
@@ -122,6 +128,14 @@ model AchievementCreator {
 // #endregion Achievement
 
 // #region Enigma
+model EnigmaContent {
+	enigma_id						Int									@unique
+	development					String
+	production					String
+	//// relations
+	enigma							Enigma							@relation(fields: [enigma_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
 model EnigmaCreator {
 	enigma_id						Int
 	user_id							Int
@@ -141,14 +155,6 @@ model EnigmaFinished {
 	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
-model EnigmaContent {
-	enigma_id						Int									@unique
-	development					String
-	production					String
-	//// relations
-	enigma							Enigma							@relation(fields: [enigma_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
-}
-
 model EnigmaSolution {
 	enigma_id						Int									@unique
 	type								Solution						@default(STRING)
@@ -158,36 +164,46 @@ model EnigmaSolution {
 }
 // #endregion Enigma
 
-// #region Serie
-model SerieCreator {
-	serie_id						Int
+// #region Series
+model SeriesCreator {
+	series_id						Int
 	user_id							Int
-	@@unique([serie_id, user_id])
+	@@unique([series_id, user_id])
 	//// relations
-	serie								Serie							@relation(fields: [serie_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	series								Series								@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
-model SerieEnigmaOrder {
-	serie_id						Int
+model SeriesEnigmaOrder {
+	series_id						Int
 	enigma_id						Int
 	order								Int
-	@@unique([serie_id, enigma_id])
+	@@unique([series_id, enigma_id])
 	//// relations
-	serie								Serie							@relation(fields: [serie_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	series								Series								@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 	enigma							Enigma							@relation(fields: [enigma_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
-model SerieFinished {
-	serie_id						Int
+model SeriesFinished {
+	series_id						Int
 	user_id							Int
 	completion_date			DateTime?						@default(now())
-	@@unique([serie_id, user_id])
+	@@unique([series_id, user_id])
 	//// relations
-	serie								Serie							@relation(fields: [serie_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	series								Series								@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
-// #endregion Serie
+
+model SeriesStarted {
+	series_id						Int
+	user_id							Int
+	started_date				DateTime?						@default(now())
+	@@unique([series_id, user_id])
+	//// relations
+	series								Series								@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+// #endregion Series
 
 // #region User
 model UserAchievement {
@@ -207,5 +223,15 @@ model UserResetPassword {
 	@@unique([user_id, token])
 	//// relations
 	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model UserSeriesNotation {
+	user_id							Int
+	series_id						Int
+	note								Int									@default(3)
+	@@unique([user_id, series_id])
+	//// relations
+	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	series								Series								@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 // #endregion User

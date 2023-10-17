@@ -7,7 +7,7 @@ import enigma from 'routes/enigma';
 import info from 'routes/defaultResponse';
 import main from 'routes/main';
 import rights from 'routes/rights';
-import serie from 'routes/serie';
+import series from 'routes/series';
 import user from 'routes/user';
 import type { Application, NextFunction, Request, Response } from 'express';
 
@@ -16,7 +16,7 @@ export default (app: Application): void => {
 	app.use('/achievement', apiLimiter, achievement);
 	app.use('/enigma', apiLimiter, enigma);
 	app.use('/rights', apiLimiter, rights);
-	app.use('/serie', apiLimiter, serie);
+	app.use('/series', apiLimiter, series);
 	app.use('/user', apiLimiter, user);
 
 	/// 404
@@ -30,7 +30,7 @@ export default (app: Application): void => {
 	});
 
 	/// 500 JSON
-	app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+	app.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
 		if (err instanceof SyntaxError && 'body' in err)
 			return res.status(400).send({ message: err }).send();
 		else

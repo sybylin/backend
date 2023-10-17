@@ -6,8 +6,8 @@ import { error, returnFormat, success } from 'code/format';
 import { jwtMiddleware } from 'lib/jwt';
 import asyncHandler from 'lib/asyncHandler';
 import { getListOfEnigmaContentImage, uploadEnigmaContentImage, uploadEnigmaLogo } from 'lib/upload';
-import SerieController from 'database/serie/controller';
-import SerieEnigmaOrder from 'database/serieEnigmaOrder/controller';
+import SeriesController from 'database/series/controller';
+import SeriesEnigmaOrder from 'database/seriesEnigmaOrder/controller';
 import EnigmaController from 'database/enigma/controller';
 import EnigmaContentController from 'database/enigmaContent/controller';
 import EnigmaCreatorController from 'database/enigmaCreator/controller';
@@ -36,8 +36,8 @@ const verifyRequest = (req: Request, res: Response, verify = '0000'): returnForm
 				missingKeys.push('id');
 			break;
 		case 1:
-			if ((!req.body.serie_id || !isNumeric(String(req.body.serie_id))))
-				missingKeys.push('serie_id');
+			if ((!req.body.series_id || !isNumeric(String(req.body.series_id))))
+				missingKeys.push('series_id');
 			break;
 		case 2:
 			if ((!req.body.user_id || !isNumeric(String(req.body.user_id))))
@@ -65,19 +65,19 @@ class enigmaCRUD {
 	static async create(req: Request, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.serie_id || typeof req.body.serie_id !== 'number')
-			return error(req, res, 'RE_002', { data: { key: 'serie_id' } }).res;
+		if (!req.body.series_id || typeof req.body.series_id !== 'number')
+			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
 		if (!req.body.order || typeof req.body.order !== 'number')
 			return error(req, res, 'RE_002', { data: { key: 'order' } }).res;
 		if (!req.body.title || typeof req.body.title !== 'string')
 			return error(req, res, 'RE_002', { data: { key: 'title' } }).res;
 		if (!req.body.description || typeof req.body.description !== 'string')
 			return error(req, res, 'RE_002', { data: { key: 'description' } }).res;
-		if (!await SerieController.thisSerieIsCreatedByUser(Number(req.body.serie_id), req.user.id))
+		if (!await SeriesController.thisSeriesIsCreatedByUser(Number(req.body.series_id), req.user.id))
 			return error(req, res, 'SE_003').res;
 
 		const enigma = await EnigmaController.create({
-			serie_id: Number(req.body.serie_id),
+			series_id: Number(req.body.series_id),
 			title: req.body.title,
 			image: null,
 			description: req.body.description,
@@ -86,7 +86,7 @@ class enigmaCRUD {
 		if (!enigma)
 			return error(req, res, 'EN_004').res;
 		await EnigmaCreatorController.create({ enigma_id: enigma.id, user_id: req.user.id });
-		await SerieEnigmaOrder.create({ serie_id: Number(req.body.serie_id), enigma_id: enigma.id, order: Number(req.body.order) });
+		await SeriesEnigmaOrder.create({ series_id: Number(req.body.series_id), enigma_id: enigma.id, order: Number(req.body.order) });
 		return success(req, res, 'EN_102', {
 			data: {
 				enigma
@@ -117,7 +117,7 @@ class enigmaCRUD {
 		if (enigma) {
 			EnigmaController.update({
 				id: enigma.id,
-				serie_id: enigma.serie_id,
+				series_id: enigma.series_id,
 				title: enigma.title,
 				image: enigma.image,
 				description: enigma.description,
@@ -154,7 +154,7 @@ class enigma extends enigmaCRUD {
 		const hasError = verifyRequest(req, res, '0100');
 		if (hasError)
 			return hasError.res;
-		const enigmas = await EnigmaController.findAll(Number(req.body.serie_id));
+		const enigmas = await EnigmaController.findAll(Number(req.body.series_id));
 		if (!enigmas)
 			return error(req, res, 'EN_001').res;
 		return success(req, res, 'EN_102', {

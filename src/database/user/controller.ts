@@ -255,7 +255,7 @@ export default class controller {
 				id: user_id
 			},
 			select: {
-				serie_finished: { select: { serie: { select: { points: true } } } },
+				series_finished: { select: { series: { select: { points: true } } } },
 				enigma_finished: { select: { enigma: { select: { points: true } } } },
 				user_achievement: { select: { achievement: { select: { points: true } } } }
 			}
@@ -263,8 +263,8 @@ export default class controller {
 		let points = 0;
 
 		if (aggr) {
-			if (Array.isArray(aggr.serie_finished))
-				aggr.serie_finished.forEach((e) => points += e.serie.points);
+			if (Array.isArray(aggr.series_finished))
+				aggr.series_finished.forEach((e) => points += e.series.points);
 			if (Array.isArray(aggr.enigma_finished))
 				aggr.enigma_finished.forEach((e) => points += e.enigma.points);
 			if (Array.isArray(aggr.user_achievement))

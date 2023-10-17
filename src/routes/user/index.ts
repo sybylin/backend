@@ -10,6 +10,8 @@ import { generateJwtToken, jwtMiddleware } from 'lib/jwt';
 import { JWT_COOKIE_NAME } from 'lib/jwtSendCookie';
 import mailSystem from 'lib/mail';
 import { log } from 'lib/log';
+import { uploadUserImage } from '@/lib/upload';
+import asyncHandler from '@/lib/asyncHandler';
 import { checkAchievement } from '@/achievement';
 import TokenController from 'database/token/controller';
 import UserController from 'database/user/controller';
@@ -20,8 +22,6 @@ import { initPasswordReset, resetPassword } from './resetPassword';
 import type { NextFunction, Response } from 'express';
 import type { User } from '@prisma/client';
 import type { UserRequest } from './interface';
-import { uploadUserImage } from '@/lib/upload';
-import asyncHandler from '@/lib/asyncHandler';
 
 class accountCRUD {
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars

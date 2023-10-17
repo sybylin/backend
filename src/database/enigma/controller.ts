@@ -1,14 +1,14 @@
-import { enigma, serieEnigmaOrder } from 'database/db.instance';
+import { enigma, seriesEnigmaOrder } from 'database/db.instance';
 import { Enigma } from '@prisma/client';
-import SerieController from 'database/serie/controller';
+import SeriesController from 'database/series/controller';
 
 export default class controller {
 	static async create(data: Omit<Enigma, 'id' | 'creation_date' | 'modification_date'>): Promise<Enigma | null | never> {
-		if (!data || data && !(await SerieController.isExist(data.serie_id)))
+		if (!data || data && !(await SeriesController.isExist(data.series_id)))
 			return null;
 		return await enigma.create({
 			data: {
-				serie_id: data.serie_id,
+				series_id: data.series_id,
 				title: data.title,
 				image: data.image,
 				description: data.description,
@@ -28,10 +28,10 @@ export default class controller {
 		});
 	}
 
-	static async findAll(serie_id: number): Promise<{ enigma: Enigma, order: number }[] | null> {
-		return serieEnigmaOrder.findMany({
+	static async findAll(series_id: number): Promise<{ enigma: Enigma, order: number }[] | null> {
+		return seriesEnigmaOrder.findMany({
 			where: {
-				serie_id
+				series_id
 			},
 			select: {
 				enigma: true,
@@ -46,8 +46,8 @@ export default class controller {
 	}
 
 	static async update(data: Enigma): Promise<Enigma | null> {
-		if (!data || !data.id || !data.serie_id || !data.title || !data.description || !data.points || 
-			(data && !(await SerieController.isExist(data.serie_id)))
+		if (!data || !data.id || !data.series_id || !data.title || !data.description || !data.points || 
+			(data && !(await SeriesController.isExist(data.series_id)))
 		)
 			return null;
 		return enigma.update({
@@ -55,7 +55,7 @@ export default class controller {
 				id: data.id
 			},
 			data: {
-				serie_id: data.serie_id,
+				series_id: data.series_id,
 				title: data.title,
 				image: data.image,
 				description: data.description,

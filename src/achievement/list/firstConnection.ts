@@ -1,8 +1,8 @@
 import UserAchievementController from 'database/userAchievement/controller';
 import { UserAchievement } from '@prisma/client';
 import Achievement from 'src/achievement/abstractAchievementClass';
-import type { Response } from 'express';
 import { log } from '@/lib/log';
+import type { Response } from 'express';
 
 interface FirstConnectionCheckAchievement {
 	user_id: number;

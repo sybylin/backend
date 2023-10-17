@@ -23,11 +23,6 @@ class achievement {
 		{ data: { has: has !== null } });
 	}
 
-	static async getAll(req: Request, res: Response, _next: NextFunction) {
-		const list = await AchievementController.findAll();
-		return success(req, res, 'AC_102', { data: { list }});
-	}
-
 	static async getAllForUser(req: Request, res: Response, _next: NextFunction) {
 		const list = await UserAchievementController.getAllForUser(req.user.id);
 		return success(req, res, 'AC_102', { data: { list } });
@@ -42,7 +37,6 @@ class achievement {
 }
 
 export default Router()
-	.get('/all', jwtMiddleware.acceptUser, asyncHandler(achievement.getAll))
-	.get('/one/:name', jwtMiddleware.acceptUser, asyncHandler(achievement.getWithName))
 	.get('/user/all', jwtMiddleware.acceptUser, asyncHandler(achievement.getAllForUser))
-	.get('/user/:name', jwtMiddleware.acceptUser, asyncHandler(achievement.getOneForUser));
+	.get('/user/:name', jwtMiddleware.acceptUser, asyncHandler(achievement.getOneForUser))
+	.get('/:name', jwtMiddleware.acceptUser, asyncHandler(achievement.getWithName));
