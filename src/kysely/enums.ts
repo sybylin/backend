@@ -1,12 +1,12 @@
 export const Role = {
-	USER: 'USER',
-	MODERATOR: 'MODERATOR',
-	ADMINISTRATOR: 'ADMINISTRATOR'
+    USER: "USER",
+    MODERATOR: "MODERATOR",
+    ADMINISTRATOR: "ADMINISTRATOR"
 } as const;
 export type Role = (typeof Role)[keyof typeof Role];
 export const Solution = {
-	STRING: 'STRING',
-	ARRAY: 'ARRAY',
-	OBJECT: 'OBJECT'
+    STRING: "STRING",
+    ARRAY: "ARRAY",
+    OBJECT: "OBJECT"
 } as const;
 export type Solution = (typeof Solution)[keyof typeof Solution];

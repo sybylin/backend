@@ -1,10 +1,10 @@
-import type { ColumnType } from 'kysely';
+import type { ColumnType } from "kysely";
 export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
-import type { Role, Solution } from './enums';
+import type { Role, Solution } from "./enums";
 
 export type Achievement = {
     id: Generated<number>;
@@ -106,10 +106,10 @@ export type UserResetPassword = {
     token: string;
     deadline: Timestamp;
 };
-export type UserSeriesNotation = {
+export type UserSeriesRating = {
     user_id: number;
     series_id: number;
-    note: Generated<number>;
+    rating: Generated<number>;
 };
 export type DB = {
     Achievement: Achievement;
@@ -128,5 +128,5 @@ export type DB = {
     User: User;
     UserAchievement: UserAchievement;
     UserResetPassword: UserResetPassword;
-    UserSeriesNotation: UserSeriesNotation;
+    UserSeriesRating: UserSeriesRating;
 };

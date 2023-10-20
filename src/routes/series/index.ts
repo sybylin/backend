@@ -4,14 +4,15 @@ import asyncHandler from '@/lib/asyncHandler';
 import { Router } from 'express';
 import { isString } from 'lodash';
 import isEmpty from 'validator/lib/isEmpty';
+import isNumeric from 'validator/lib/isNumeric';
 import { error, success } from 'code/format';
-import { uploadSeriesLogo } from '@/lib/upload';
+import { seriesLogo } from '@/lib/upload';
+import UserSeriesNotation from 'database/UserSeriesRating/controller';
 import SeriesController from 'database/series/controller';
 import SeriesEnigmaOrderController from 'database/seriesEnigmaOrder/controller';
 import SeriesCreationController from 'database/seriesCreator/controller';
 import type { Request, Response, NextFunction } from 'express';
 import type { Series } from '@prisma/client';
-import isNumeric from 'validator/lib/isNumeric';
 
 interface SeriesCreateRequest extends Request {
 	body: {
@@ -29,16 +30,16 @@ class serieCRUD {
 		if (!req.body.description || !isString(req.body.description) || isEmpty(req.body.description))
 			return error(req, res, 'RE_002', { data: { key: 'description' } }).res;
 
-		let serie: Series | null = null;
+		let series: Series | null = null;
 		try {
-			serie = await SeriesController.create({
+			series = await SeriesController.create({
 				title: req.body.title,
 				description: req.body.description,
 			});
-			if (serie) {
+			if (series) {
 				await SeriesCreationController.create({
 					user_id: req.user.id,
-					series_id: serie.id
+					series_id: series.id
 				});
 			}
 		} catch (e: any) {
@@ -46,13 +47,13 @@ class serieCRUD {
 				if (e.meta.target.includes('title'))
 					return error(req, res, 'SE_001').res;
 			} else
-				return error(req, res, 'SE_002', { data: { serieCreationFailed: true } });
+				return error(req, res, 'SE_002', { data: { seriesCreationFailed: true } }).res;
 		}
 		if (!serie || typeof serie === 'boolean')
-			return error(req, res, 'SE_002', { data: { serieCreationFailed: true } });
+			return error(req, res, 'SE_002', { data: { seriesCreationFailed: true } });
 		return success(req, res, 'SE_101', {
 			data: {
-				serie
+				series
 			}
 		}).res;
 	}
@@ -67,7 +68,7 @@ class serieCRUD {
 			return error(req, res, 'SE_003').res;
 		return success(req, res, 'SE_104', {
 			data: {
-				serieDelete: await SeriesController.delete(id)
+				seriesDelete: await SeriesController.delete(id)
 			}
 		}).res;
 	}
@@ -82,14 +83,49 @@ class serie extends serieCRUD {
 		}).res;
 	}
 
-	static async findOne(req: Request, res: Response, _next: NextFunction) {
+	static async findOne(req: Request, res: Response, _next: NextFunction, rating = false) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.series_id)
+		if (!req.body.series_id || typeof req.body.series_id !== 'number')
 			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
 		return success(req, res, 'SE_101', {
 			data: {
-				series: await SeriesController.findOne(req.body.series_id as number)
+				series: (!rating)
+					? await SeriesController.findOne(Number(req.body.series_id))
+					: undefined,
+				rating: (rating)
+					? await SeriesController.rating(Number(req.body.series_id))
+					: undefined
+			}
+		}).res;
+	}
+
+	static async findUserRating(req: Request, res: Response, _next: NextFunction) {
+		if (!Object.keys(req.body).length)
+			return error(req, res, 'RE_001').res;
+		if (!req.body.series_id || typeof req.body.series_id !== 'number')
+			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
+		return success(req, res, 'SE_101', {
+			data: {
+				rating: (await SeriesController.userRating(req.user.id, Number(req.body.series_id)))?.rating
+			}
+		}).res;
+	}
+
+	static async putUserRating(req: Request, res: Response, _next: NextFunction) {
+		if (!Object.keys(req.body).length)
+			return error(req, res, 'RE_001').res;
+		if (!req.body.series_id || typeof req.body.series_id !== 'number')
+			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
+		if (!req.body.rating || typeof req.body.rating !== 'number')
+			return error(req, res, 'RE_002', { data: { key: 'rating' } }).res;
+		return success(req, res, 'SE_101', {
+			data: {
+				rating: await UserSeriesNotation.update({
+					user_id: req.user.id,
+					series_id: Number(req.body.series_id),
+					rating: Number(req.body.rating)
+				})
 			}
 		}).res;
 	}
@@ -155,12 +191,17 @@ export default Router()
 
 	.post('/create', jwtMiddleware.acceptUser, asyncHandler(serie.create))
 	.post('/isCreatedByUser', jwtMiddleware.acceptUser, asyncHandler(serie.thisSeriesIsCreatedByUser))
-	.post('/one', jwtMiddleware.acceptUser, asyncHandler(serie.findOne))
+	.post('/one', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.findOne(req, res, next, false)))
+
+	.post('/one/rating', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.findOne(req, res, next, true)))
+	.post('/one/rating/user', jwtMiddleware.acceptUser, asyncHandler(serie.findUserRating))
+	.put('/one/rating', jwtMiddleware.acceptUser, asyncHandler(serie.putUserRating))
+
 	.post('/update/order', jwtMiddleware.acceptUser, asyncHandler(serie.updateEnigmaOrder))
 	.post('/update/title', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.updatePart('title', req, res, next)))
 	.post('/update/description', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.updatePart('description', req, res, next)))
 	.post('/update/points', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.updatePart('points', req, res, next)))
 	.post('/update/published', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.updatePart('published', req, res, next)))
-	.post('/update/image', jwtMiddleware.acceptUser, uploadSeriesLogo.middleware.single('image'), asyncHandler(uploadSeriesLogo.check))
+	.post('/update/image', jwtMiddleware.acceptUser, seriesLogo.middleware.single('image'), asyncHandler(seriesLogo.check))
 
 	.delete('/:id', jwtMiddleware.acceptUser, asyncHandler(serie.delete));

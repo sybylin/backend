@@ -72,7 +72,7 @@ model Series {
 	series_finished			SeriesFinished[]
 	series_started				SeriesStarted[]
 	
-	user_series_notation	UserSeriesNotation[]
+	user_series_rating	UserSeriesRating[]
 }
 
 model User {
@@ -100,7 +100,7 @@ model User {
 
 	user_achievement		UserAchievement[]
 	user_reset_password	UserResetPassword[]
-	user_series_notation	UserSeriesNotation[]
+	user_series_rating	UserSeriesRating[]
 
 	token_list					Token[]
 }
@@ -225,10 +225,10 @@ model UserResetPassword {
 	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
-model UserSeriesNotation {
+model UserSeriesRating {
 	user_id							Int
 	series_id						Int
-	note								Int									@default(3)
+	rating								Int									@default(3)
 	@@unique([user_id, series_id])
 	//// relations
 	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)

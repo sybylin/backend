@@ -1,4 +1,4 @@
-import { series, enigma } from 'database/db.instance';
+import { series, enigma, userSeriesRating } from 'database/db.instance';
 import { Series } from '@prisma/client';
 	
 export default class controller {
@@ -44,11 +44,13 @@ export default class controller {
 		id: number;
 		title: string;
 		image: string | null;
+		rating: number;
 		modification_date: Date | null;
-		series_finished: { completion_date: Date | null }[];
-		series_started: { started_date: Date | null }[];
+		creator: { name: string; avatar: string | null } | null;
+		series_finished: Date | null;
+		series_started: Date | null;
 	}[] | null> {
-		return series.findMany({
+		return (await series.findMany({
 			where: {
 				published: true,
 			},
@@ -57,6 +59,16 @@ export default class controller {
 				image: true,
 				title: true,
 				modification_date: true,
+				series_creator: {
+					select: {
+						user: {
+							select: {
+								name: true,
+								avatar: true
+							}
+						}
+					}
+				},
 				series_started: {
 					where: {
 						user_id
@@ -72,6 +84,11 @@ export default class controller {
 					select: {
 						completion_date: true
 					}
+				},
+				user_series_rating: {
+					select: {
+						rating: true
+					}
 				}
 			},
 			orderBy: [
@@ -79,7 +96,24 @@ export default class controller {
 					modification_date: 'desc'
 				}
 			]
-		});
+		})).map((e) => ({
+			id: e.id,
+			title: e.title,
+			image: e.image,
+			rating: (e.user_series_rating.length)
+				? (e.user_series_rating.reduce((prev, curr) => prev + curr.rating, 0) / e.user_series_rating.length)
+				: 2.5,
+			modification_date: e.modification_date,
+			series_finished: (e.series_finished.length)
+				? e.series_finished[0].completion_date
+				: null,
+			series_started: (e.series_finished.length)
+				? e.series_started[0].started_date
+				: null,
+			creator: (e.series_creator.length)
+				? e.series_creator[0].user
+				: null
+		}));
 	}
 	
 	static async update(data: Series): Promise<Series | null> {
@@ -171,5 +205,39 @@ export default class controller {
 			select
 		});
 		return ret;
+	}
+
+	static async userRating(user_id: number, series_id: number): Promise<{ rating: number } | null> {
+		return userSeriesRating.findUnique({
+			where: {
+				user_id_series_id: {
+					user_id,
+					series_id
+				}
+			},
+			select: {
+				rating: true
+			}
+		});
+	}
+
+	static async rating(series_id: number): Promise<number | null> {
+		const ret = await userSeriesRating.aggregate({
+			where: {
+				series_id
+			},
+			_count: {
+				_all: true
+			},
+			_sum: {
+				rating: true
+			}
+		});
+
+		if (ret._count._all <= 0 || !ret._sum.rating)
+			return null;
+		return (ret._count._all === 1)
+			? ret._sum.rating
+			: ret._sum.rating / ret._count._all;
 	}
 }

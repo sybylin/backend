@@ -5,7 +5,7 @@ import isNumeric from 'validator/lib/isNumeric';
 import { error, returnFormat, success } from 'code/format';
 import { jwtMiddleware } from 'lib/jwt';
 import asyncHandler from 'lib/asyncHandler';
-import { getListOfEnigmaContentImage, uploadEnigmaContentImage, uploadEnigmaLogo } from 'lib/upload';
+import { enigmaContent, enigmaLogo } from 'lib/upload';
 import SeriesController from 'database/series/controller';
 import SeriesEnigmaOrder from 'database/seriesEnigmaOrder/controller';
 import EnigmaController from 'database/enigma/controller';
@@ -129,11 +129,18 @@ class enigmaCRUD {
 	}
 
 	static async delete(req: Request<any>, res: Response<any>, _next: NextFunction) {
-		const hasError = verifyRequest(req, res, '1000');
-		if (hasError)
-			return hasError.res;
-		await EnigmaController.delete(req.body.id);
-		return success(req, res, 'AC_106').res;
+		if (!Object.keys(req.params).length)
+			return error(req, res, 'RE_007').res;
+		if (!req.params.id || !isNumeric(req.params.id))
+			return error(req, res, 'RE_003', { data: { key: 'id' } }).res;
+		const id = Number(req.params.id);
+		if (!await EnigmaController.thisEnigmaIsCreatedByUser(id, req.user.id))
+			return error(req, res, 'SE_003').res;
+		return success(req, res, 'AC_106', {
+			data: {
+				enigmaDelete: await EnigmaController.delete(id)
+			}
+		}).res;
 	}
 
 }
@@ -219,8 +226,11 @@ class enigma extends enigmaCRUD {
 		return success(req, res, 'SE_102', {
 			data: {
 				enigma: (devOrProd === 'dev')
-					? await EnigmaContentController.readDevelopment(req.body.enigma_id)
-					: await EnigmaContentController.readProduction(req.body.enigma_id)
+					? await EnigmaContentController.readDevelopment(Number(req.body.enigma_id))
+					: await EnigmaContentController.readProduction(Number(req.body.enigma_id)),
+				info: (devOrProd === 'prod')
+					? await EnigmaController.findOneInfo(Number(req.body.enigma_id))
+					: undefined
 			}
 		}).res;
 	}
@@ -257,9 +267,11 @@ export default Router()
 	.post('/update/title', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.updatePart('title', req, res, next)))
 	.post('/update/description', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.updatePart('description', req, res, next)))
 	.post('/update/points', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.updatePart('points', req, res, next)))
-	.post('/update/image', jwtMiddleware.acceptUser, uploadEnigmaLogo.middleware.single('image'), asyncHandler(uploadEnigmaLogo.check))
+	.post('/update/image', jwtMiddleware.acceptUser, enigmaLogo.middleware.single('image'), asyncHandler(enigmaLogo.check))
 	.post('/update/page/dev', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.savePageEditor(req, res, next, 'dev')))
 	.post('/update/page/prod', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.savePageEditor(req, res, next, 'prod')))
 
-	.get('/content/list', jwtMiddleware.acceptUser, asyncHandler(getListOfEnigmaContentImage))
-	.post('/content/image', jwtMiddleware.acceptUser, uploadEnigmaContentImage.middleware.single('image'), asyncHandler(uploadEnigmaContentImage.check));
+	.get('/content/list', jwtMiddleware.acceptUser, asyncHandler(enigmaContent.listOfImage))
+	.post('/content/image', jwtMiddleware.acceptUser, enigmaContent.middleware.single('image'), asyncHandler(enigmaContent.check))
+
+	.delete('/:id', jwtMiddleware.acceptUser, asyncHandler(enigma.delete));

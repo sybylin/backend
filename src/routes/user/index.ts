@@ -10,8 +10,8 @@ import { generateJwtToken, jwtMiddleware } from 'lib/jwt';
 import { JWT_COOKIE_NAME } from 'lib/jwtSendCookie';
 import mailSystem from 'lib/mail';
 import { log } from 'lib/log';
-import { uploadUserImage } from '@/lib/upload';
-import asyncHandler from '@/lib/asyncHandler';
+import { userProfil } from 'lib/upload';
+import asyncHandler from 'lib/asyncHandler';
 import { checkAchievement } from '@/achievement';
 import TokenController from 'database/token/controller';
 import UserController from 'database/user/controller';
@@ -336,12 +336,12 @@ export default Router()
 	.post('/role', jwtMiddleware.acceptAdministrator, asyncHandler(account.updateRole))
 	.post('/reset/init', asyncHandler(initPasswordReset))
 	.post('/reset/update', asyncHandler(resetPassword))
-	
+
 	.put('/', jwtMiddleware.acceptUser, asyncHandler(account.update))
 	.put('/image',
 		jwtMiddleware.acceptUser,
-		uploadUserImage.middleware.single('image'),
-		asyncHandler(uploadUserImage.check)
+		userProfil.middleware.single('image'),
+		asyncHandler(userProfil.check)
 	)
 
 	.delete('/', jwtMiddleware.acceptUser, asyncHandler(account.delete));

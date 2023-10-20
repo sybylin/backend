@@ -28,6 +28,19 @@ export default class controller {
 		});
 	}
 
+	static async findOneInfo(id: number): Promise<{ title: string, image: string | null, description: string } | null> {
+		return enigma.findUnique({
+			where: {
+				id
+			},
+			select: {
+				title: true,
+				image: true,
+				description: true
+			}
+		});
+	}
+
 	static async findAll(series_id: number): Promise<{ enigma: Enigma, order: number }[] | null> {
 		return seriesEnigmaOrder.findMany({
 			where: {
@@ -85,15 +98,35 @@ export default class controller {
 		return ret;
 	}
 
-	static async delete(id: number): Promise<Enigma> {
+	static async delete(id: number): Promise<{ id: number }> {
 		return enigma.delete({
 			where: {
 				id
+			},
+			select: {
+				id: true
 			}
 		});
 	}
 
 	static async isExist(id: number): Promise<boolean> {
 		return ((await this.findOne(id)) !== null);
+	}
+
+	static async thisEnigmaIsCreatedByUser(enigma_id: number, user_id: number): Promise<boolean> {
+		return (await enigma.findUnique({
+			where: {
+				id: enigma_id,
+				enigma_creator: {
+					some: {
+						user_id
+					}
+				}
+			},
+			select: {
+				id: true
+			}
+		}) !== null
+		);
 	}
 }
