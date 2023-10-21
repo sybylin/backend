@@ -1,5 +1,5 @@
 import { enigmaSolution } from 'database/db.instance';
-import { EnigmaSolution } from '@prisma/client';
+import { EnigmaSolution, Solution } from '@prisma/client';
 import EnigmaController from 'database/enigma/controller';
 import compareSolution from './compareSolution';
 	
@@ -17,36 +17,51 @@ export default class controller {
 		});
 	}
 		
-	static async find(enigma_id: number): Promise<EnigmaSolution | null> {
+	static async find(enigma_id: number): Promise<{ type: Solution, solution: string } | null> {
 		return enigmaSolution.findUnique({
 			where: {
 				enigma_id
+			},
+			select: {
+				type: true,
+				solution: true
 			}
 		});
 	}
 	
-	static async update(data: EnigmaSolution): Promise<EnigmaSolution | null> {
+	static async update(data: EnigmaSolution): Promise<boolean | null> {
 		if (!data || !data.enigma_id || !data.solution ||
 			(data && !(await EnigmaController.isExist(data.enigma_id)))
 		)
 			return null;
-		return enigmaSolution.update({
+		return await enigmaSolution.upsert({
 			where: {
 				enigma_id: data.enigma_id
 			},
-			data: {
-				enigma_id: data.enigma_id,
+			update: {
+				type: data.type as Solution,
 				solution: data.solution
+			},
+			create: {
+				enigma_id: data.enigma_id,
+				type: data.type as Solution,
+				solution: data.solution
+			},
+			select: {
+				enigma_id: true
 			}
-		});
+		}) !== null;
 	}
 	
-	static async delete(enigma_id: number): Promise<EnigmaSolution> {
-		return enigmaSolution.delete({
+	static async delete(enigma_id: number): Promise<boolean> {
+		return await enigmaSolution.delete({
 			where: {
 				enigma_id
+			},
+			select: {
+				enigma_id: true
 			}
-		});
+		}) !== null;
 	}
 
 	static async checkSolution(enigma_id: number, solution: unknown): Promise<boolean | null> {

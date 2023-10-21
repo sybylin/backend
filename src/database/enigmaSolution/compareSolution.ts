@@ -1,12 +1,6 @@
 import { isEqual } from 'lodash';
-import { EnigmaSolution } from '@prisma/client';
+import {  Solution } from '@prisma/client';
 
-const Solution = {
-	STRING: 'STRING',
-	ARRAY: 'ARRAY',
-	OBJECT: 'OBJECT',
-};
-type Solution = (typeof Solution)[keyof typeof Solution];
 type Obj = Record<string | number | symbol, unknown>;
 
 class solution {
@@ -23,13 +17,15 @@ class solution {
 	}
 }
 
-export default (enigma_solution: EnigmaSolution, user_solution: unknown): Promise<boolean> => {
+export default (enigma_solution: { type: Solution, solution: string }, user_solution: unknown): Promise<boolean> => {
+	const is = (type: Solution) => enigma_solution.type.localeCompare(type) === 0;
+
 	return new Promise((res, rej) => {
-		if (enigma_solution.type.localeCompare(Solution.STRING) === 0)
+		if (is(Solution.STRING))
 			return res(solution.isString(enigma_solution.solution, user_solution as string));
-		else if (enigma_solution.type.localeCompare(Solution.ARRAY) === 0)
+		else if (is(Solution.ARRAY))
 			return res(solution.isArray(JSON.parse(enigma_solution.solution) as unknown[], JSON.parse(user_solution as string) as unknown[]));
-		else if (enigma_solution.type.localeCompare(Solution.OBJECT) === 0)
+		else if (is(Solution.OBJECT))
 			return res(solution.isObject(JSON.parse(enigma_solution.solution) as Obj, JSON.parse(user_solution as string) as Obj));
 		else
 			rej(`${enigma_solution.type} type not supported`);

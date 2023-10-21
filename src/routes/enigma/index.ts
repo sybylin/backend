@@ -186,14 +186,43 @@ class enigma extends enigmaCRUD {
 		}).res;
 	}
 
-	static async verifySolution(req: Request<any>, res: Response<any>, _next: NextFunction) {
+	static async getSolution(req: Request, res: Response, _next: NextFunction) {
+		const hasError = verifyRequest(req, res, '1000');
+		if (hasError)
+			return hasError.res;
+		if (!await EnigmaCreatorController.thisEnigmaIsCreatedByUser(Number(req.body.id), req.user.id))
+			return error(req, res, 'SE_003').res;
+		return success(req, res, 'EN_104', {
+			data: {
+				solution: await EnigmaSolutionController.find(Number(req.body.id))
+			}
+		}).res;
+	}
+
+	static async saveSolution(req: Request, res: Response, _next: NextFunction) {
+		const hasError = verifyRequest(req, res, '1000');
+		if (hasError)
+			return hasError.res;
+		if (!req.body.solution || typeof req.body.solution !== 'string')
+			return error(req, res, 'RE_002', { data: { key: 'solution' } }).res;
+		if (!req.body.type || typeof req.body.type !== 'string')
+			return error(req, res, 'RE_002', { data: { key: 'type' } }).res;
+		if (!await EnigmaCreatorController.thisEnigmaIsCreatedByUser(Number(req.body.id), req.user.id))
+			return error(req, res, 'SE_003').res;
+		return success(req, res, 'EN_104', {
+			data: {
+				solution: await EnigmaSolutionController.update({ enigma_id: Number(req.body.id), type: req.body.type, solution: req.body.solution})
+			}
+		}).res;
+	}
+
+	static async verifySolution(req: Request, res: Response, _next: NextFunction) {
 		const hasError = verifyRequest(req, res, '1001');
 		if (hasError)
 			return hasError.res;
-		const isCorrect = await EnigmaSolutionController.checkSolution(req.body.id, req.body.solution);
 		return success(req, res, 'EN_104', {
 			data: {
-				isCorrect
+				isCorrect: await EnigmaSolutionController.checkSolution(req.body.id, req.body.solution)
 			}
 		}).res;
 	}
@@ -259,6 +288,11 @@ export default Router()
 	.post('/one', jwtMiddleware.acceptUser, asyncHandler(enigma.get))
 	.post('/all', jwtMiddleware.acceptUser, asyncHandler(enigma.getAllOfSeries))
 	.post('/finished', jwtMiddleware.acceptUser, asyncHandler(enigma.isFinished))
+
+	.post('/solution/get', jwtMiddleware.acceptUser, asyncHandler(enigma.getSolution))
+	.post('/solution/save', jwtMiddleware.acceptUser, asyncHandler(enigma.saveSolution))
+	.post('/solution/check', jwtMiddleware.acceptUser, asyncHandler(enigma.verifySolution))
+
 	.post('/check', jwtMiddleware.acceptUser, asyncHandler(enigma.verifySolution))
 
 	.post('/page/get/dev', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.getPage(req, res, next, 'dev')))

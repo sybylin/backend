@@ -7,7 +7,7 @@ import isEmpty from 'validator/lib/isEmpty';
 import isNumeric from 'validator/lib/isNumeric';
 import { error, success } from 'code/format';
 import { seriesLogo } from '@/lib/upload';
-import UserSeriesNotation from 'database/UserSeriesRating/controller';
+import UserSeriesRating from 'database/userSeriesRating/controller';
 import SeriesController from 'database/series/controller';
 import SeriesEnigmaOrderController from 'database/seriesEnigmaOrder/controller';
 import SeriesCreationController from 'database/seriesCreator/controller';
@@ -121,7 +121,7 @@ class serie extends serieCRUD {
 			return error(req, res, 'RE_002', { data: { key: 'rating' } }).res;
 		return success(req, res, 'SE_101', {
 			data: {
-				rating: await UserSeriesNotation.update({
+				rating: await UserSeriesRating.update({
 					user_id: req.user.id,
 					series_id: Number(req.body.series_id),
 					rating: Number(req.body.rating)
