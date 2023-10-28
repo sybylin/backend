@@ -1,6 +1,20 @@
 import { enigma, seriesEnigmaOrder } from 'database/db.instance';
 import { Enigma } from '@prisma/client';
 import SeriesController from 'database/series/controller';
+// import EnigmaFinishedController from 'database/enigmaFinished/controller';
+
+interface seriesEnigmaList {
+	enigma: {
+		id: number;
+		title: string;
+		image: string | null;
+		description: string;
+		enigma_finished: {
+			completion_date: Date | null;
+		}[];
+	};
+	order: number;
+}
 
 export default class controller {
 	static async create(data: Omit<Enigma, 'id' | 'creation_date' | 'modification_date'>): Promise<Enigma | null | never> {
@@ -17,7 +31,7 @@ export default class controller {
 		});
 	}
 
-	static async findOne(id: number): Promise<Enigma | null> {
+	static async findOne(id: number,): Promise<Enigma | null> {
 		return enigma.findUnique({
 			where: {
 				id
@@ -41,13 +55,28 @@ export default class controller {
 		});
 	}
 
-	static async findAll(series_id: number): Promise<{ enigma: Enigma, order: number }[] | null> {
+	static async findAll(series_id: number, user_id: number): Promise<seriesEnigmaList[] | null> {
 		return seriesEnigmaOrder.findMany({
 			where: {
 				series_id
 			},
 			select: {
-				enigma: true,
+				enigma: {
+					select: {
+						id: true,
+						title: true,
+						image: true,
+						description: true,
+						enigma_finished: {
+							where: {
+								user_id
+							},
+							select: {
+								completion_date: true
+							}
+						}
+					}
+				},
 				order: true
 			},
 			orderBy: [

@@ -91,7 +91,7 @@ class serie extends serieCRUD {
 		return success(req, res, 'SE_101', {
 			data: {
 				series: (!rating)
-					? await SeriesController.findOne(Number(req.body.series_id))
+					? await SeriesController.findOne(Number(req.body.series_id), req.user.id)
 					: undefined,
 				rating: (rating)
 					? await SeriesController.rating(Number(req.body.series_id))

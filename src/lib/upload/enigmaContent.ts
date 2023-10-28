@@ -1,6 +1,6 @@
 import { Dirent, existsSync } from 'fs';
 import { access, constants, mkdir, readdir } from 'fs/promises';
-import { join, resolve } from 'path';
+import { join, resolve, normalize } from 'path/posix';
 import multer from 'multer';
 import { error, success } from 'code/format';
 import Upload from './abstractUpload';
@@ -57,10 +57,13 @@ class UploadEnigmaContent extends Upload {
 				recursive: false
 			})).filter((e) => e.isFile());
 		}
+
 		return success(req, res, 'SE_103', {
 			data: {
 				files: (filesDirent)
-					? filesDirent.map((e) => join(this.publicPath, req.user.id.toString(), e.name))
+					? filesDirent.map((e) => normalize(
+						join(this.publicPath, req.user.id.toString(), e.name)
+					))
 					: []
 			}
 		}).res;

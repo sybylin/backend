@@ -1,6 +1,25 @@
 import { series, enigma, userSeriesRating } from 'database/db.instance';
 import { Series } from '@prisma/client';
-	
+
+interface seriesOne {
+	id: number;
+	image: string | null;
+	modification_date: Date | null;
+	title: string;
+	description: string;
+	series_enigma_order: {
+		enigma: {
+			id: number;
+			image: string | null;
+			title: string;
+			description: string;
+			enigma_finished: {
+				completion_date: Date | null;
+			}[];
+		};
+	}[];
+}
+
 export default class controller {
 	static async create(data: Omit<Series, 'id' | 'image' | 'points' | 'published' | 'creation_date' | 'modification_date'>): Promise<Series | null | never> {
 		if (!data || !data.title ||!data.description)
@@ -16,20 +35,39 @@ export default class controller {
 		});
 	}
 		
-	static async findOne(idOrTitle: number | string): Promise<Series | null> {
+	static async findOne(series_id: number, user_id: number): Promise<seriesOne | null> {
 		return series.findUnique({
-			where: (typeof idOrTitle === 'number')
-				? { id: idOrTitle }
-				: { title: idOrTitle },
-			include: {
+			where: {
+				id: series_id,
+				published: true
+			},
+			select: {
+				id: true,
+				title: true,
+				description: true,
+				image: true,
+				modification_date: true,
 				series_enigma_order: {
-					include: {
-						enigma: true
+					select: {
+						enigma: {
+							select: {
+								id: true,
+								title: true,
+								description: true,
+								image: true,
+								enigma_finished: {
+									where: {
+										user_id
+									},
+									select: {
+										completion_date: true
+									}
+								}
+							}
+						}
 					},
 					orderBy: [
-						{
-							order: 'asc'
-						}
+						{ order: 'asc' }
 					]
 				}
 			}
@@ -148,8 +186,15 @@ export default class controller {
 		});
 	}
 
-	static async isExist(idOrTitle: number | string): Promise<boolean> {
-		return ((await this.findOne(idOrTitle)) !== null);
+	static async isExist(series_id: number): Promise<boolean> {
+		return ((await series.findUnique({
+			where: {
+				id: series_id
+			},
+			select: {
+				id: true
+			}
+		})) !== null);
 	}
 
 	static async findCreatedByUser(user_id: number): Promise<Series[]> {

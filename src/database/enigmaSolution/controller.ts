@@ -2,6 +2,7 @@ import { enigmaSolution } from 'database/db.instance';
 import { EnigmaSolution, Solution } from '@prisma/client';
 import EnigmaController from 'database/enigma/controller';
 import compareSolution from './compareSolution';
+import type { userSolutionInterface, realSolutionInterface } from './compareSolution';
 	
 export default class controller {
 	static async create(data: EnigmaSolution): Promise<EnigmaSolution | null | never> {
@@ -27,6 +28,32 @@ export default class controller {
 				solution: true
 			}
 		});
+	}
+
+	static async findType(enigma_id: number): Promise<{ type: Solution } | null> {
+		return enigmaSolution.findUnique({
+			where: {
+				enigma_id
+			},
+			select: {
+				type: true
+			}
+		});
+	}
+
+	static async getListOfKeys(enigma_id: number): Promise<string[] | null> {
+		const enigma = await enigmaSolution.findUnique({
+			where: {
+				enigma_id,
+				type: 'OBJECT'
+			},
+			select: {
+				solution: true
+			}
+		});
+		if (!enigma)
+			return null;
+		return Object.entries(JSON.parse(enigma.solution)).map((e) => e[0]);
 	}
 	
 	static async update(data: EnigmaSolution): Promise<boolean | null> {
@@ -64,10 +91,16 @@ export default class controller {
 		}) !== null;
 	}
 
-	static async checkSolution(enigma_id: number, solution: unknown): Promise<boolean | null> {
-		const enigmaSolution = await this.find(enigma_id);
-		return enigmaSolution
-			? compareSolution(enigmaSolution, solution)
-			: null;
+	static async checkSolution(enigma_id: number, userSolution: userSolutionInterface): Promise<boolean | null> {
+		const realSolution = await this.find(enigma_id);
+		if (!realSolution || !enigmaSolution)
+			return null;
+		return compareSolution(
+			{
+				type: realSolution.type,
+				solution: JSON.parse(realSolution.solution)
+			} as realSolutionInterface,
+			userSolution
+		);
 	}
 }

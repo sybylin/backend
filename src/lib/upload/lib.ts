@@ -68,7 +68,7 @@ export const filenameGeneration = (
 	file: Express.Multer.File,
 	cb: (error: Error | null, destination: string) => void
 ): void => {
-	const firstPart = randomBytes(32).toString('hex').slice(0, 32);
+	const firstPart = randomBytes(32).toString('hex').slice(0, 16);
 	const getExtension = () => {
 		const extOriginName = extname(file.originalname);
 		return (!extOriginName || extOriginName.localeCompare('.') === 0)

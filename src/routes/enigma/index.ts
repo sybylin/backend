@@ -44,7 +44,7 @@ const verifyRequest = (req: Request, res: Response, verify = '0000'): returnForm
 				missingKeys.push('user_id');
 			break;
 		case 3:
-			if ((!req.body.solution || isEmpty(String(req.body.solution))))
+			if (!req.body.solution)
 				missingKeys.push('solution');
 		}
 	}
@@ -161,7 +161,7 @@ class enigma extends enigmaCRUD {
 		const hasError = verifyRequest(req, res, '0100');
 		if (hasError)
 			return hasError.res;
-		const enigmas = await EnigmaController.findAll(Number(req.body.series_id));
+		const enigmas = await EnigmaController.findAll(Number(req.body.series_id), req.user.id);
 		if (!enigmas)
 			return error(req, res, 'EN_001').res;
 		return success(req, res, 'EN_102', {
@@ -220,9 +220,16 @@ class enigma extends enigmaCRUD {
 		const hasError = verifyRequest(req, res, '1001');
 		if (hasError)
 			return hasError.res;
+		const isCorrect = await EnigmaSolutionController.checkSolution(req.body.id, req.body.solution);
+		if (isCorrect) {
+			await EnigmaFinishedController.create({
+				enigma_id: Number(req.body.id),
+				user_id: req.user.id
+			});
+		}
 		return success(req, res, 'EN_104', {
 			data: {
-				isCorrect: await EnigmaSolutionController.checkSolution(req.body.id, req.body.solution)
+				isCorrect
 			}
 		}).res;
 	}
@@ -259,6 +266,12 @@ class enigma extends enigmaCRUD {
 					: await EnigmaContentController.readProduction(Number(req.body.enigma_id)),
 				info: (devOrProd === 'prod')
 					? await EnigmaController.findOneInfo(Number(req.body.enigma_id))
+					: undefined,
+				solution: (devOrProd === 'prod')
+					? (await EnigmaSolutionController.findType(Number(req.body.enigma_id)))?.type
+					: undefined,
+				objectSolutionKeys: (devOrProd === 'prod')
+					? (await EnigmaSolutionController.getListOfKeys(Number(req.body.enigma_id)))
 					: undefined
 			}
 		}).res;

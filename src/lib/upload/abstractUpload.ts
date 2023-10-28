@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync } from 'fs';
-import { join, resolve } from 'path';
+import { join, resolve } from 'path/posix';
 import type { Request, Response, NextFunction } from 'express';
 import type { Multer } from 'multer';
 
