@@ -257,13 +257,15 @@ class enigma extends enigmaCRUD {
 			return error(req, res, 'RE_001').res;
 		if (!req.body.enigma_id || typeof req.body.enigma_id !== 'number')
 			return error(req, res, 'RE_002', { data: { key: 'enigma_id' } }).res;
+		if (devOrProd === 'prod' && (!req.body.series_id || typeof req.body.series_id !== 'number'))
+			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
 		if (devOrProd === 'dev' && !await EnigmaCreatorController.thisEnigmaIsCreatedByUser(Number(req.body.enigma_id), req.user.id))
 			return error(req, res, 'SE_003').res;
 		return success(req, res, 'SE_102', {
 			data: {
 				enigma: (devOrProd === 'dev')
 					? await EnigmaContentController.readDevelopment(Number(req.body.enigma_id))
-					: await EnigmaContentController.readProduction(Number(req.body.enigma_id)),
+					: await EnigmaContentController.readProduction(Number(req.body.enigma_id), Number(req.body.series_id), req.user.id),
 				info: (devOrProd === 'prod')
 					? await EnigmaController.findOneInfo(Number(req.body.enigma_id))
 					: undefined,

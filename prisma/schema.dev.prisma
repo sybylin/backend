@@ -64,10 +64,10 @@ model Series {
 	creation_date				DateTime?						@default(now())
 	modification_date		DateTime?						@updatedAt
 	//// relations
-	series_creator				SeriesCreator[]
+	series_creator			SeriesCreator[]
 	series_enigma_order	SeriesEnigmaOrder[]
 	series_finished			SeriesFinished[]
-	series_started				SeriesStarted[]
+	series_started			SeriesStarted[]
 	
 	user_series_rating	UserSeriesRating[]
 }
@@ -91,9 +91,9 @@ model User {
 	enigma_creator			EnigmaCreator[]
 	enigma_finished			EnigmaFinished[]
 
-	series_creator				SeriesCreator[]
+	series_creator			SeriesCreator[]
 	series_finished			SeriesFinished[]
-	series_started				SeriesStarted[]
+	series_started			SeriesStarted[]
 
 	user_achievement		UserAchievement[]
 	user_reset_password	UserResetPassword[]
