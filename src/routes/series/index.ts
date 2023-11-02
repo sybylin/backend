@@ -150,14 +150,12 @@ class serie extends serieCRUD {
 		}).res;
 	}
 
-	static async updatePart(part: 'title' | 'description' | 'points' | 'published', req: Request, res: Response, _next: NextFunction) {
+	static async updatePart(part: 'title' | 'description' | 'published', req: Request, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
 		if (!req.body.series_id || typeof req.body.series_id !== 'number')
 			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
 		if (!Object.prototype.hasOwnProperty.call(req.body, part))
-			return error(req, res, 'RE_002', { data: { key: part } }).res;
-		if (part === 'points' && typeof req.body[part] !== 'number' || req.body[part] < 0 || req.body[part] > 5000)
 			return error(req, res, 'RE_002', { data: { key: part } }).res;
 		if (!await SeriesController.thisSeriesIsCreatedByUser(Number(req.body.series_id), req.user.id))
 			return error(req, res, 'SE_003').res;
@@ -193,15 +191,23 @@ export default Router()
 	.post('/isCreatedByUser', jwtMiddleware.acceptUser, asyncHandler(serie.thisSeriesIsCreatedByUser))
 	.post('/one', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.findOne(req, res, next, false)))
 
-	.post('/one/rating', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.findOne(req, res, next, true)))
 	.post('/one/rating/user', jwtMiddleware.acceptUser, asyncHandler(serie.findUserRating))
+	.post('/one/rating', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.findOne(req, res, next, true)))
 	.put('/one/rating', jwtMiddleware.acceptUser, asyncHandler(serie.putUserRating))
 
+	.post('/update/image', jwtMiddleware.acceptUser, seriesLogo.middleware.single('image'), asyncHandler(seriesLogo.check))
+	.post('/update/:path', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => {
+		if (req.params.path.localeCompare('order') === 0)
+			return serie.updateEnigmaOrder(req, res, next);
+		return serie.updatePart(req.params.path as 'title' | 'description' | 'published', req, res, next);
+	}))
+	/*
 	.post('/update/order', jwtMiddleware.acceptUser, asyncHandler(serie.updateEnigmaOrder))
 	.post('/update/title', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.updatePart('title', req, res, next)))
 	.post('/update/description', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.updatePart('description', req, res, next)))
-	.post('/update/points', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.updatePart('points', req, res, next)))
+	// .post('/update/points', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.updatePart('points', req, res, next)))
 	.post('/update/published', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.updatePart('published', req, res, next)))
 	.post('/update/image', jwtMiddleware.acceptUser, seriesLogo.middleware.single('image'), asyncHandler(seriesLogo.check))
+	*/
 
 	.delete('/:id', jwtMiddleware.acceptUser, asyncHandler(serie.delete));

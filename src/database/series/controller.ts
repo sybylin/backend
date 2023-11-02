@@ -29,24 +29,31 @@ export default class controller {
 				title: data.title,
 				image: null,
 				description: data.description,
-				published: false,
-				points: 0
+				published: false
 			}
 		});
 	}
 		
-	static async findOne(series_id: number, user_id: number): Promise<seriesOne | null> {
-		return series.findUnique({
+	static async findOne(series_id: number, user_id: number): Promise<seriesOne | false | null> {
+		const __series = await series.findUnique({
 			where: {
 				id: series_id,
-				published: true
 			},
 			select: {
 				id: true,
 				title: true,
 				description: true,
 				image: true,
+				published: true,
 				modification_date: true,
+				series_creator: {
+					where: {
+						user_id
+					},
+					select: {
+						user_id: true
+					}
+				},
 				series_enigma_order: {
 					select: {
 						enigma: {
@@ -72,6 +79,19 @@ export default class controller {
 				}
 			}
 		});
+		if (!__series)
+			return null;
+		let isCreator = false;
+		if (
+			__series.series_creator &&
+			__series.series_creator.length &&
+			__series.series_creator.findIndex((s) => s.user_id === user_id) !== -1
+		)
+			isCreator = true;
+		delete (__series as Record<string, any>)['series_creator'];
+		return (isCreator || __series.published)
+			? __series
+			: false;
 	}
 
 	static async findAll(): Promise<Series[] | null> {
@@ -164,8 +184,7 @@ export default class controller {
 			data: {
 				title: data.title,
 				image: data.image,
-				description: data.description,
-				points: data.points
+				description: data.description
 			}
 		});
 	}
@@ -231,7 +250,7 @@ export default class controller {
 		);
 	}
 
-	static async updatePart(series_id: number, part: 'title' | 'description' | 'points' | 'image' | 'published', data: string | number | boolean): Promise<unknown> {
+	static async updatePart(series_id: number, part: 'title' | 'description' | 'image' | 'published', data: string | number | boolean): Promise<unknown> {
 		const obj: Record<string, string | number | boolean> = {};
 		const select: Record<string, boolean> = {};
 		obj[part] = data;

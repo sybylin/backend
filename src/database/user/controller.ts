@@ -1,5 +1,5 @@
 import * as argon2 from 'argon2';
-import { user } from 'database/db.instance';
+import { user, enigmaFinished, seriesFinished, userAchievement } from 'database/db.instance';
 import { User, Role } from '@prisma/client';
 
 export interface CleanUser {
@@ -17,6 +17,8 @@ export enum enumCheckUser {
 	INCORRECT_PASSWORD,
 	ERROR
 }
+
+
 
 export default class controller {
 	static async create(data: Omit<User, 'id' | 'avatar' | 'creation_date' | 'modification_date'>): Promise<{ name: string, email: string } | null> {
@@ -250,26 +252,25 @@ export default class controller {
 	}
 
 	static async getPoints(user_id: number): Promise<number> {
-		const aggr = await user.findUnique({
+		const achievementPoints = await userAchievement.findMany({
 			where: {
-				id: user_id
+				user_id
 			},
 			select: {
-				series_finished: { select: { series: { select: { points: true } } } },
-				enigma_finished: { select: { enigma: { select: { points: true } } } },
-				user_achievement: { select: { achievement: { select: { points: true } } } }
+				achievement: {
+					select: {
+						points: true
+					}
+				}
 			}
 		});
 		let points = 0;
 
-		if (aggr) {
-			if (Array.isArray(aggr.series_finished))
-				aggr.series_finished.forEach((e) => points += e.series.points);
-			if (Array.isArray(aggr.enigma_finished))
-				aggr.enigma_finished.forEach((e) => points += e.enigma.points);
-			if (Array.isArray(aggr.user_achievement))
-				aggr.user_achievement.forEach((e) => points += e.achievement.points);
-		}
+		points += (await enigmaFinished.count({ where: { user_id } }) ?? 0) * 300;
+		points += (await seriesFinished.count({ where: { user_id } }) ?? 0) * 1500;
+		if (achievementPoints && Array.isArray(achievementPoints))
+			achievementPoints.forEach((e) => points += e.achievement.points);
+
 		return points;
 	}
 }

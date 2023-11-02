@@ -26,7 +26,7 @@ model Achievement {
 	id									Int									@id @default(autoincrement())
 	name								String							@unique @db.VarChar(255)
 	description					String
-	points							Int									@default(10)
+	points							Int									@default(50)
 	creation_date				DateTime?						@default(now())
 	modification_date		DateTime?						@updatedAt
 	//// relations
@@ -41,7 +41,6 @@ model Enigma {
 	title								String							@db.VarChar(255)
 	image								String?
 	description					String
-	points							Int									@default(0)
 	creation_date				DateTime?						@default(now())
 	modification_date		DateTime?						@updatedAt
 	@@unique([series_id, title])
@@ -59,7 +58,6 @@ model Series {
 	title								String							@unique
 	image								String?
 	description					String
-	points							Int									@default(0)
 	published						Boolean							@default(false)
 	creation_date				DateTime?						@default(now())
 	modification_date		DateTime?						@updatedAt
@@ -167,7 +165,7 @@ model SeriesCreator {
 	user_id							Int
 	@@unique([series_id, user_id])
 	//// relations
-	series								Series								@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	series							Series							@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
@@ -177,7 +175,7 @@ model SeriesEnigmaOrder {
 	order								Int
 	@@unique([series_id, enigma_id])
 	//// relations
-	series								Series								@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	series							Series							@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 	enigma							Enigma							@relation(fields: [enigma_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
@@ -187,7 +185,7 @@ model SeriesFinished {
 	completion_date			DateTime?						@default(now())
 	@@unique([series_id, user_id])
 	//// relations
-	series								Series								@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	series							Series							@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
@@ -197,7 +195,7 @@ model SeriesStarted {
 	started_date				DateTime?						@default(now())
 	@@unique([series_id, user_id])
 	//// relations
-	series								Series								@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	series							Series							@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 // #endregion Series
@@ -225,10 +223,10 @@ model UserResetPassword {
 model UserSeriesRating {
 	user_id							Int
 	series_id						Int
-	rating								Int									@default(3)
+	rating							Int									@default(3)
 	@@unique([user_id, series_id])
 	//// relations
 	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
-	series								Series								@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	series							Series							@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 // #endregion User

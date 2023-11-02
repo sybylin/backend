@@ -25,8 +25,7 @@ export default class controller {
 				series_id: data.series_id,
 				title: data.title,
 				image: data.image,
-				description: data.description,
-				points: data.points
+				description: data.description
 			}
 		});
 	}
@@ -88,7 +87,7 @@ export default class controller {
 	}
 
 	static async update(data: Enigma): Promise<Enigma | null> {
-		if (!data || !data.id || !data.series_id || !data.title || !data.description || !data.points || 
+		if (!data || !data.id || !data.series_id || !data.title || !data.description || 
 			(data && !(await SeriesController.isExist(data.series_id)))
 		)
 			return null;
@@ -100,8 +99,7 @@ export default class controller {
 				series_id: data.series_id,
 				title: data.title,
 				image: data.image,
-				description: data.description,
-				points: data.points
+				description: data.description
 			}
 		});
 	}

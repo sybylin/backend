@@ -80,8 +80,7 @@ class enigmaCRUD {
 			series_id: Number(req.body.series_id),
 			title: req.body.title,
 			image: null,
-			description: req.body.description,
-			points: 0
+			description: req.body.description
 		});
 		if (!enigma)
 			return error(req, res, 'EN_004').res;
@@ -121,7 +120,6 @@ class enigmaCRUD {
 				title: enigma.title,
 				image: enigma.image,
 				description: enigma.description,
-				points: enigma.points,
 				creation_date: null,
 				modification_date: null
 			});

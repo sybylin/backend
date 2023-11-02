@@ -24,7 +24,6 @@ export type Enigma = {
     title: string;
     image: string | null;
     description: string;
-    points: Generated<number>;
     creation_date: Generated<Timestamp | null>;
     modification_date: Timestamp | null;
 };
@@ -52,7 +51,6 @@ export type Series = {
     title: string;
     image: string | null;
     description: string;
-    points: Generated<number>;
     published: Generated<boolean>;
     creation_date: Generated<Timestamp | null>;
     modification_date: Timestamp | null;
