@@ -20,6 +20,38 @@ interface seriesOne {
 	}[];
 }
 
+interface getSeries {
+	id: number;
+	title: string;
+	image: string | null;
+	rating: number;
+	modification_date: Date | null;
+	creator: { name: string; avatar: string | null } | null;
+	series_finished: Date | null;
+	series_started: Date | null;
+}
+
+const cleanSeries = (e: any) => {
+	return {
+		id: e.id,
+		title: e.title,
+		image: e.image,
+		rating: (e.user_series_rating.length)
+			? (e.user_series_rating.reduce((prev: any, curr: any) => prev + curr.rating, 0) / e.user_series_rating.length)
+			: 2.5,
+		modification_date: e.modification_date,
+		series_finished: (e.series_finished.length)
+			? e.series_finished[0].completion_date
+			: null,
+		series_started: (e.series_started.length)
+			? e.series_started[0].started_date
+			: null,
+		creator: (e.series_creator.length)
+			? e.series_creator[0].user
+			: null
+	};
+};
+
 export default class controller {
 	static async create(data: Omit<Series, 'id' | 'image' | 'points' | 'published' | 'creation_date' | 'modification_date'>): Promise<Series | null | never> {
 		if (!data || !data.title ||!data.description)
@@ -98,16 +130,7 @@ export default class controller {
 		return series.findMany();
 	}
 
-	static async findAllPublished(user_id: number): Promise<{
-		id: number;
-		title: string;
-		image: string | null;
-		rating: number;
-		modification_date: Date | null;
-		creator: { name: string; avatar: string | null } | null;
-		series_finished: Date | null;
-		series_started: Date | null;
-	}[] | null> {
+	static async findAllPublished(user_id: number): Promise<getSeries[] | null> {
 		return (await series.findMany({
 			where: {
 				published: true,
@@ -154,24 +177,7 @@ export default class controller {
 					modification_date: 'desc'
 				}
 			]
-		})).map((e) => ({
-			id: e.id,
-			title: e.title,
-			image: e.image,
-			rating: (e.user_series_rating.length)
-				? (e.user_series_rating.reduce((prev, curr) => prev + curr.rating, 0) / e.user_series_rating.length)
-				: 2.5,
-			modification_date: e.modification_date,
-			series_finished: (e.series_finished.length)
-				? e.series_finished[0].completion_date
-				: null,
-			series_started: (e.series_finished.length)
-				? e.series_started[0].started_date
-				: null,
-			creator: (e.series_creator.length)
-				? e.series_creator[0].user
-				: null
-		}));
+		})).map(cleanSeries);
 	}
 	
 	static async update(data: Series): Promise<Series | null> {
@@ -231,6 +237,66 @@ export default class controller {
 				}
 			]
 		});
+	}
+
+	static async findLinkedToUser(user_id: number): Promise<getSeries[]> {
+		return (await series.findMany({
+			where: {
+				published: true,
+				series_started: {
+					some: {
+						user_id
+					}
+				},
+				series_finished: {
+					some: {
+						user_id
+					}
+				}
+			},
+			select: {
+				id: true,
+				image: true,
+				title: true,
+				modification_date: true,
+				series_creator: {
+					select: {
+						user: {
+							select: {
+								name: true,
+								avatar: true
+							}
+						}
+					}
+				},
+				series_started: {
+					where: {
+						user_id
+					},
+					select: {
+						started_date: true
+					}
+				},
+				series_finished: {
+					where: {
+						user_id
+					},
+					select: {
+						completion_date: true
+					}
+				},
+				user_series_rating: {
+					select: {
+						rating: true
+					}
+				}
+			},
+			orderBy: [
+				{
+					modification_date: 'desc'
+				}
+			]
+		})).map(cleanSeries);
 	}
 
 	static async thisSeriesIsCreatedByUser(series_id: number, user_id: number): Promise<boolean> {

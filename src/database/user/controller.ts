@@ -5,10 +5,21 @@ import { User, Role } from '@prisma/client';
 export interface CleanUser {
 	id: number;
   name: string;
+	email: string;
+	role: Role;
+  avatar: string | null;
+  verify: boolean | null;
+	creation_date: Date | null;
+}
+
+export interface FullUser {
+  name: string;
+	email: string;
 	role: Role,
   avatar: string | null;
   verify: boolean | null;
 	creation_date: Date | null;
+	modification_date: Date | null;
 }
 
 export enum enumCheckUser {
@@ -17,8 +28,6 @@ export enum enumCheckUser {
 	INCORRECT_PASSWORD,
 	ERROR
 }
-
-
 
 export default class controller {
 	static async create(data: Omit<User, 'id' | 'avatar' | 'creation_date' | 'modification_date'>): Promise<{ name: string, email: string } | null> {
@@ -45,7 +54,7 @@ export default class controller {
 		return user.findUnique({
 			where: (typeof nameOrId === 'number')
 				? { id: nameOrId }
-				: { name: nameOrId },
+				: { name: nameOrId }
 		});
 	}
 
@@ -53,6 +62,23 @@ export default class controller {
 		return user.findUnique({
 			where: {
 				email
+			}
+		});
+	}
+
+	static cleanFindOneFull(nameOrId: string | number): Promise<FullUser | null> {
+		return user.findUnique({
+			where: (typeof nameOrId === 'number')
+				? { id: nameOrId }
+				: { name: nameOrId },
+			select: {
+				name: true,
+				email: true,
+				avatar: true,
+				role: true,
+				verify: true,
+				creation_date: true,
+				modification_date: true,
 			}
 		});
 	}
@@ -65,6 +91,7 @@ export default class controller {
 			select: {
 				id: true,
 				name: true,
+				email: true,
 				role: true,
 				avatar: true,
 				verify: true,
@@ -87,6 +114,7 @@ export default class controller {
 			select: {
 				id: true,
 				name: true,
+				email: true,
 				role: true,
 				avatar: true,
 				verify: true,
@@ -147,20 +175,38 @@ export default class controller {
 		});
 	}
 
-	static async update(data: Omit<User, 'avatar' | 'role' | 'creation_date' | 'modification_date'>, passNotChange: boolean = false): Promise<User> {
+	static async update(
+		data: Omit<User, 'avatar' | 'role' | 'creation_date' | 'modification_date' | 'last_connection'>,
+		passNotChange: boolean = false
+	): Promise<CleanUser> {
 		return user.update({
 			where: {
 				id: data.id
 			},
-			data: {
-				name: data.name,
-				email: data.email,
-				password: (passNotChange)
-					? await argon2.hash(data.password)
-					: data.password,
-				verify: data.verify,
-				token: data.token,
-				token_deadline: data.token_deadline
+			data: (passNotChange)
+				? {
+					name: data.name,
+					email: data.email,
+					verify: data.verify,
+					token: data.token,
+					token_deadline: data.token_deadline
+				}
+				: {
+					name: data.name,
+					email: data.email,
+					password: await argon2.hash(data.password),
+					verify: data.verify,
+					token: data.token,
+					token_deadline: data.token_deadline
+				},
+			select: {
+				id: true,
+				name: true,
+				email: true,
+				role: true,
+				avatar: true,
+				verify: true,
+				creation_date: true
 			}
 		});
 	}

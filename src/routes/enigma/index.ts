@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Router } from 'express';
-import isEmpty from 'validator/lib/isEmpty';
 import isNumeric from 'validator/lib/isNumeric';
 import { error, returnFormat, success } from 'code/format';
 import { jwtMiddleware } from 'lib/jwt';
 import asyncHandler from 'lib/asyncHandler';
+import { checkAchievement } from '@/achievement';
 import { enigmaContent, enigmaLogo } from 'lib/upload';
 import SeriesController from 'database/series/controller';
 import SeriesEnigmaOrder from 'database/seriesEnigmaOrder/controller';
@@ -224,6 +224,10 @@ class enigma extends enigmaCRUD {
 				enigma_id: Number(req.body.id),
 				user_id: req.user.id
 			});
+			await checkAchievement(req, res, 'seriesFinished', {
+				enigma_id: Number(req.body.id),
+				user_id: req.user.id
+			});
 		}
 		return success(req, res, 'EN_104', {
 			data: {
@@ -277,7 +281,7 @@ class enigma extends enigmaCRUD {
 		}).res;
 	}
 
-	static async savePageEditor(req: Request, res: Response, _next: NextFunction, devOrProd: 'dev' | 'prod') {
+	static async savePage(req: Request, res: Response, _next: NextFunction, devOrProd: 'dev' | 'prod') {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
 		if (!req.body.enigma_id || typeof req.body.enigma_id !== 'number')
@@ -302,21 +306,21 @@ export default Router()
 	.post('/all', jwtMiddleware.acceptUser, asyncHandler(enigma.getAllOfSeries))
 	.post('/finished', jwtMiddleware.acceptUser, asyncHandler(enigma.isFinished))
 
-	.post('/solution/get', jwtMiddleware.acceptUser, asyncHandler(enigma.getSolution))
-	.post('/solution/save', jwtMiddleware.acceptUser, asyncHandler(enigma.saveSolution))
-	.post('/solution/check', jwtMiddleware.acceptUser, asyncHandler(enigma.verifySolution))
+	.post('/solution/:type', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => {
+		switch (req.params.type as 'get' | 'save' | 'check') {
+		case 'get':
+			return enigma.getSolution(req, res, next);
+		case 'save':
+			return enigma.saveSolution(req, res, next);
+		case 'check':
+			return enigma.verifySolution(req, res, next);
+		}
+	}))
+	.post('/page/:type', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.getPage(req, res, next, req.params.type as 'dev' | 'prod')))
+	.put('/page/:type', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.savePage(req, res, next, req.params.type as 'dev' | 'prod')))
 
-	.post('/check', jwtMiddleware.acceptUser, asyncHandler(enigma.verifySolution))
-
-	.post('/page/get/dev', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.getPage(req, res, next, 'dev')))
-	.post('/page/get/prod', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.getPage(req, res, next, 'prod')))
-
-	.post('/update/title', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.updatePart('title', req, res, next)))
-	.post('/update/description', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.updatePart('description', req, res, next)))
-	.post('/update/points', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.updatePart('points', req, res, next)))
 	.post('/update/image', jwtMiddleware.acceptUser, enigmaLogo.middleware.single('image'), asyncHandler(enigmaLogo.check))
-	.post('/update/page/dev', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.savePageEditor(req, res, next, 'dev')))
-	.post('/update/page/prod', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.savePageEditor(req, res, next, 'prod')))
+	.post('/update/:type', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.updatePart(req.params.type as 'title' | 'description', req, res, next)))
 
 	.get('/content/list', jwtMiddleware.acceptUser, asyncHandler(enigmaContent.listOfImage))
 	.post('/content/image', jwtMiddleware.acceptUser, enigmaContent.middleware.single('image'), asyncHandler(enigmaContent.check))

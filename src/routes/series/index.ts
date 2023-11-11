@@ -78,7 +78,15 @@ class serie extends serieCRUD {
 	static async getPublishedSeries(req: Request, res: Response, _next: NextFunction) {
 		return success(req, res, 'SE_101', {
 			data: {
-				series: await SeriesController.findAllPublished(req.user.id)
+				series: await SeriesController.findAllPublished(req.user?.id ?? -1)
+			}
+		}).res;
+	}
+
+	static async getSeriesLinkedToUser(req: Request, res: Response, _next: NextFunction) {
+		return success(req, res, 'SE_101', {
+			data: {
+				series: await SeriesController.findLinkedToUser(req.user.id)
 			}
 		}).res;
 	}
@@ -185,7 +193,8 @@ class serie extends serieCRUD {
 
 export default Router()
 	.get('/createByUser', jwtMiddleware.acceptUser, asyncHandler(serie.getCreatedByUser))
-	.get('/published', jwtMiddleware.acceptUser, asyncHandler(serie.getPublishedSeries))
+	.get('/published', asyncHandler(serie.getPublishedSeries))
+	.get('/user', jwtMiddleware.acceptUser, asyncHandler(serie.getSeriesLinkedToUser))
 
 	.post('/create', jwtMiddleware.acceptUser, asyncHandler(serie.create))
 	.post('/isCreatedByUser', jwtMiddleware.acceptUser, asyncHandler(serie.thisSeriesIsCreatedByUser))
@@ -201,13 +210,5 @@ export default Router()
 			return serie.updateEnigmaOrder(req, res, next);
 		return serie.updatePart(req.params.path as 'title' | 'description' | 'published', req, res, next);
 	}))
-	/*
-	.post('/update/order', jwtMiddleware.acceptUser, asyncHandler(serie.updateEnigmaOrder))
-	.post('/update/title', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.updatePart('title', req, res, next)))
-	.post('/update/description', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.updatePart('description', req, res, next)))
-	// .post('/update/points', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.updatePart('points', req, res, next)))
-	.post('/update/published', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.updatePart('published', req, res, next)))
-	.post('/update/image', jwtMiddleware.acceptUser, seriesLogo.middleware.single('image'), asyncHandler(seriesLogo.check))
-	*/
 
 	.delete('/:id', jwtMiddleware.acceptUser, asyncHandler(serie.delete));

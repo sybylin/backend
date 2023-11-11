@@ -25,7 +25,7 @@ prisma.$on('warn', (e) => {
 export const {
 	achievement, achievementCreator,
 	enigma, enigmaContent, enigmaCreator, enigmaFinished, enigmaSolution,
-	series, seriesCreator, seriesEnigmaOrder, seriesFinished,
+	series, seriesStarted, seriesCreator, seriesEnigmaOrder, seriesFinished,
 	user, userAchievement, userResetPassword, userSeriesRating,
 	token
 } = prisma;

@@ -1,5 +1,6 @@
 import { enigmaContent, series } from 'database/db.instance';
 import { EnigmaContent } from '@prisma/client';
+import SeriesStartedController from 'database/seriesStarted/controller';
 
 export default class controller {
 	static async create(data: EnigmaContent): Promise<EnigmaContent | null | never> {
@@ -74,6 +75,9 @@ export default class controller {
 		const enigmaIndex = enigmasSeries?.series_enigma_order.findIndex((e) => e.enigma.id === enigma_id);
 		if (!enigmasSeries || enigmaIndex === undefined || enigmaIndex <= -1)
 			return null;
+
+		if (enigmaIndex === 0)
+			await SeriesStartedController.create({ series_id, user_id });
 		if (
 			enigmaIndex !== -1 &&
 			(

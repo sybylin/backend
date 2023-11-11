@@ -1,8 +1,8 @@
-import { seriesFinished } from 'database/db.instance';
+import { enigmaFinished, seriesFinished, seriesEnigmaOrder } from 'database/db.instance';
 import { SeriesFinished } from '@prisma/client';
 	
 export default class controller {
-	static async create(data: SeriesFinished): Promise<SeriesFinished | null | never> {
+	static async create(data: Omit<SeriesFinished, 'completion_date'>): Promise<SeriesFinished | null | never> {
 		if (!data || !data.series_id || !data.user_id)
 			return null;
 		return seriesFinished.create({
@@ -60,7 +60,21 @@ export default class controller {
 		});
 	}
 
-	static async isFinished(series_id: number, user_id: number): Promise<boolean> {
-		return ((await this.findOne(series_id, user_id)) !== null);
+	static async isFinished(series_id: number, user_id: number): Promise<'already' | boolean> {
+		if (await this.findOne(series_id, user_id))
+			return 'already';
+		if (
+			(await seriesEnigmaOrder.count({ where: { series_id } })) ===
+			(await enigmaFinished.count({
+				where: {
+					user_id,
+					enigma: { series_id }
+				}
+			}))
+		) {
+			await this.create({ series_id, user_id });
+			return true;
+		}
+		return false;
 	}
 }

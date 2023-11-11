@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Router } from 'express';
+import isEmail from 'validator/lib/isEmail';
 import isEmpty from 'validator/lib/isEmpty';
 import isNumeric from 'validator/lib/isNumeric';
 import normalizeEmail from 'validator/lib/normalizeEmail';
@@ -14,18 +15,17 @@ import { userProfil } from 'lib/upload';
 import asyncHandler from 'lib/asyncHandler';
 import { checkAchievement } from '@/achievement';
 import TokenController from 'database/token/controller';
-import UserController from 'database/user/controller';
+import UserController, { FullUser } from 'database/user/controller';
 import { enumCheckUser } from 'database/user/controller';
 import { verifyRequest, generateToken } from './utility';
 import { initPasswordReset, resetPassword } from './resetPassword';
 
-import type { NextFunction, Response } from 'express';
+import type { Request, NextFunction, Response } from 'express';
 import type { User } from '@prisma/client';
-import type { UserRequest } from './interface';
 
 class accountCRUD {
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	static async create(req: UserRequest, res: Response<any>, _next: NextFunction) {
+	static async create(req: Request, res: Response, _next: NextFunction) {
 		const hasError = verifyRequest(req, res, true, true);
 		if (hasError)
 			return hasError.res;
@@ -76,7 +76,7 @@ class accountCRUD {
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	static async read(req: UserRequest, res: Response<any>, _next: NextFunction) {
+	static async read(req: Request, res: Response, _next: NextFunction) {
 		const hasError = verifyRequest(req, res, false, false);
 		if (hasError)
 			return hasError.res;
@@ -87,68 +87,58 @@ class accountCRUD {
 		}).res;
 	}
 
-	static async update(req: UserRequest, res: Response<any>, next: NextFunction) {
-		const hasError = verifyRequest(req, res, true, true);
-		if (hasError)
-			return hasError.res;
-		const mail = normalizeEmail(req.body.email);
-		if (mail === false)
+	static async update(req: Request, res: Response, next: NextFunction) {
+		if (!Object.keys(req.body).length)
+			return error(req, res, 'RE_001').res;
+		if (!req.body.name || !isString(req.body.name) || isEmpty(req.body.name))
+			return error(req, res, 'RE_002', { data: { key: 'name' } }).res;
+		if (!req.body.email || !isString(req.body.email) || isEmpty(req.body.email))
+			return error(req, res, 'RE_002', { data: { key: 'email' } }).res;
+		if (!isEmail(req.body.email))
+			return error(req, res, 'US_005').res;
+		req.body.email = normalizeEmail(req.body.email);
+		if (req.body.email === false)
 			return error(req, res, 'US_004').res;
-
-		let accountCheck: { data: unknown; info: enumCheckUser } | null = null;
-		let user: User | null = null;
-		try {
-			accountCheck = await UserController.check(req.body.name, req.body.password);
-		} catch (e: any) {
-			if (e.code === 'P2002') {
-				if (e.meta.target.includes('name'))
-					return error(req, res, 'US_006').res;
-				if (e.meta.target.includes('email'))
-					return error(req, res, 'US_007').res;
-			} else
-				return next(e);
+		if (req.body.oldPassword && req.body.newPassword) {
+			if (!req.body.oldPassword || !isString(req.body.oldPassword) || isEmpty(req.body.oldPassword))
+				return error(req, res, 'RE_002', { data: { key: 'oldPassword' } });
+			if (!req.body.newPassword || !isString(req.body.newPassword) || isEmpty(req.body.newPassword))
+				return error(req, res, 'RE_002', { data: { key: 'newPassword' } });
+			if ((await UserController.check(req.user.id, req.body.oldPassword)).info === enumCheckUser.INCORRECT_PASSWORD)
+				return error(req, res, 'US_002').res;
 		}
-		if (!accountCheck)
-			return error(req, res, 'US_001').res;
 
-		try {
-			user = await UserController.findOne(req.body.name);
-		} catch {
-			return error(req, res, 'GE_002').res;
-		}
-		if (!user)
-			return error(req, res, 'GE_001').res;
-
+		const mailNotChanged = req.user.email.localeCompare(req.body.email) === 0;
+		const passwordChanged = !req.body.oldPassword || !req.body.oldPassword.length || !req.body.newPassword || !req.body.newPassword.length;
 		const token = generateToken();
-		try {
-			await UserController.update({
-				id: user.id,
-				name: req.body.name,
-				email: mail ?? user.email,
-				verify: !(mail),
-				last_connection: user.last_connection,
-				token: (mail)
-					? token.token
-					: null,
-				token_deadline: (mail)
-					? token.deadline
-					: null,
-				password: req.body.password as string ?? undefined
-			}, !!(req.body.password));
-			mailSystem.accountVerification(mail, { token: String(token.token) });
-		} catch {
-			return next(new Error(getInfo('GE_002').message));
-		}
-
-		return success(req, res, 'US_102', {
-			data: {
-				mailSend: true
-			}
-		}).res;
+		const newUser = await UserController.update({
+			id: req.user.id,
+			name: req.body.name,
+			email: req.body.email,
+			verify: mailNotChanged,
+			token: (!mailNotChanged)
+				? token.token
+				: null,
+			token_deadline: (!mailNotChanged)
+				? token.deadline
+				: null,
+			password: req.body.password as string ?? undefined
+		}, passwordChanged);
+		if (!mailNotChanged)
+			await mailSystem.accountVerification(req.body.email, { token: String(token.token) });
+		return success(req, res, 'US_102',
+			{
+				data: {
+					user: newUser,
+					mailSend: !!mailNotChanged
+				},
+			},
+			await generateJwtToken(req.user.id, newUser.name, false)
+		).res;
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	static async delete(req: UserRequest, res: Response<any>, _next: NextFunction) {
+	static async delete(req: Request, res: Response, _next: NextFunction) {
 		const hasError = verifyRequest(req, res, true, false);
 		if (hasError)
 			return hasError.res;
@@ -164,11 +154,10 @@ class accountCRUD {
 }
 
 class account extends accountCRUD {
-	static async getUser(req: UserRequest, res: Response<any>, next: NextFunction) {
+	static async getUser(req: Request, res: Response, next: NextFunction) {
 		if (!req.params.name)
 			return error(req, res, 'RE_002', { data: { key: 'name' } }).res;
-		const user = await UserController.findOne(req.params.name)
-			.catch(() => next(new Error(getInfo('GE_001').message)));
+		const user = await UserController.findOne(req.params.name);
 		if (!user)
 			return error(req, res, 'US_001').res;
 		return success(req, res, 'US_107', {
@@ -181,19 +170,23 @@ class account extends accountCRUD {
 		}).res;
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	static async getHisInfo(req: UserRequest, res: Response<any>, _next: NextFunction) {
-		if (req.user) {
-			return success(req, res, 'US_107', {
-				data: {
-					user: req.user
-				}
-			});
-		}
-		return error(req, res, 'US_001');
+	static async getHisInfo(req: Request, res: Response, _next: NextFunction) {
+		return success(req, res, 'US_107', {
+			data: {
+				user: req.user
+			}
+		});
 	}
 
-	static async checkUser(req: UserRequest, res: Response<any>, _next: NextFunction) {
+	static async getAllHisInfo(req: Request, res: Response, _next: NextFunction) {
+		return success(req, res, 'US_107', {
+			data: {
+				user: await UserController.cleanFindOneFull(req.user.id)
+			}
+		});
+	}
+
+	static async checkUser(req: Request, res: Response, _next: NextFunction) {
 		const hasError = verifyRequest(req, res, true, false);
 		if (hasError)
 			return hasError.res;
@@ -235,7 +228,7 @@ class account extends accountCRUD {
 		).res;
 	}
 
-	static async token(req: UserRequest, res: Response<any>, next: NextFunction) {
+	static async token(req: Request, res: Response, next: NextFunction) {
 		const hasError = verifyRequest(req, res, false, false);
 		if (hasError)
 			return hasError.res;
@@ -282,7 +275,7 @@ class account extends accountCRUD {
 		}
 	}
 
-	static async logout(req: UserRequest, res: Response<any>, next: NextFunction) {
+	static async logout(req: Request, res: Response, next: NextFunction) {
 		const authHeader = req.cookies[JWT_COOKIE_NAME] as string;
 
 		if (authHeader) {
@@ -295,7 +288,7 @@ class account extends accountCRUD {
 			.send({ logout: true });
 	}
 
-	static async updateRole(req: UserRequest, res: Response<any>, next: NextFunction) {
+	static async updateRole(req: Request, res: Response, next: NextFunction) {
 		const hasError = verifyRequest(req, res, false, false);
 		if (hasError)
 			return hasError.res;
@@ -312,7 +305,7 @@ class account extends accountCRUD {
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	static async getPoints(req: UserRequest, res: Response<any>, _next: NextFunction) {
+	static async getPoints(req: Request, res: Response, _next: NextFunction) {
 		if (req.user) {
 			return success(req, res, 'US_107', {
 				data: {
@@ -326,9 +319,9 @@ class account extends accountCRUD {
 
 export default Router()
 	.get('/', jwtMiddleware.acceptUser, asyncHandler(account.getHisInfo))
+	.get('/all', jwtMiddleware.acceptUser, asyncHandler(account.getAllHisInfo))
 	.get('/points', jwtMiddleware.acceptUser, asyncHandler(account.getPoints))
 	.get('/logout', jwtMiddleware.acceptUser, asyncHandler(account.logout))
-	.get('/get/:name', jwtMiddleware.acceptUser, asyncHandler(account.getUser))
 
 	.post('/create', asyncHandler(account.create))
 	.post('/check', asyncHandler(account.checkUser))
