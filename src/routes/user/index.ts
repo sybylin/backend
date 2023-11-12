@@ -139,15 +139,10 @@ class accountCRUD {
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	static async delete(req: Request, res: Response, _next: NextFunction) {
-		const hasError = verifyRequest(req, res, true, false);
-		if (hasError)
-			return hasError.res;
-		if (!await UserController.check(req.body.name, req.body.password))
-			return error(req, res, 'US_001').res;
-		await UserController.delete(req.body.name);
+		await UserController.delete(req.user.id);
 		return success(req, res, 'US_106', {
 			data: {
-				name: req.body.name
+				name: req.user.name
 			}
 		}).res;
 	}
@@ -174,6 +169,14 @@ class account extends accountCRUD {
 		return success(req, res, 'US_107', {
 			data: {
 				user: req.user
+			}
+		});
+	}
+
+	static async getHisRole(req: Request, res: Response, _next: NextFunction) {
+		return success(req, res, 'US_107', {
+			data: {
+				role: req.user.role
 			}
 		});
 	}
@@ -319,6 +322,7 @@ class account extends accountCRUD {
 
 export default Router()
 	.get('/', jwtMiddleware.acceptUser, asyncHandler(account.getHisInfo))
+	.get('/role', jwtMiddleware.acceptUser, asyncHandler(account.getHisRole))
 	.get('/all', jwtMiddleware.acceptUser, asyncHandler(account.getAllHisInfo))
 	.get('/points', jwtMiddleware.acceptUser, asyncHandler(account.getPoints))
 	.get('/logout', jwtMiddleware.acceptUser, asyncHandler(account.logout))

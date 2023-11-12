@@ -17,6 +17,12 @@ enum Role {
 	ADMINISTRATOR
 }
 
+enum SeriesStatus {
+	UNPUBLISHED
+	PENDING
+	PUBLISHED
+}
+
 enum Solution {
 	STRING
 	ARRAY
@@ -61,7 +67,7 @@ model Series {
 	title								String							@unique
 	image								String?
 	description					String
-	published						Boolean							@default(false)
+	published						SeriesStatus				@default(UNPUBLISHED)
 	creation_date				DateTime?						@default(now())
 	modification_date		DateTime?						@updatedAt
 	//// relations

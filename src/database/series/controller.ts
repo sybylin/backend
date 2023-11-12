@@ -1,5 +1,5 @@
 import { series, enigma, userSeriesRating } from 'database/db.instance';
-import { Series } from '@prisma/client';
+import { Series, SeriesStatus } from '@prisma/client';
 
 interface seriesOne {
 	id: number;
@@ -61,7 +61,7 @@ export default class controller {
 				title: data.title,
 				image: null,
 				description: data.description,
-				published: false
+				published: SeriesStatus.UNPUBLISHED
 			}
 		});
 	}
@@ -133,7 +133,7 @@ export default class controller {
 	static async findAllPublished(user_id: number): Promise<getSeries[] | null> {
 		return (await series.findMany({
 			where: {
-				published: true,
+				published: SeriesStatus.PUBLISHED,
 			},
 			select: {
 				id: true,
@@ -242,7 +242,7 @@ export default class controller {
 	static async findLinkedToUser(user_id: number): Promise<getSeries[]> {
 		return (await series.findMany({
 			where: {
-				published: true,
+				published: SeriesStatus.PUBLISHED,
 				series_started: {
 					some: {
 						user_id
