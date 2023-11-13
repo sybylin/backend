@@ -74,6 +74,7 @@ model Series {
 	series_creator			SeriesCreator[]
 	series_enigma_order	SeriesEnigmaOrder[]
 	series_finished			SeriesFinished[]
+	series_verified_by	SeriesVerifiedBy?
 	series_started			SeriesStarted[]
 	
 	user_series_rating	UserSeriesRating[]
@@ -100,6 +101,7 @@ model User {
 
 	series_creator			SeriesCreator[]
 	series_finished			SeriesFinished[]
+	series_verified_by	SeriesVerifiedBy?
 	series_started			SeriesStarted[]
 
 	user_achievement		UserAchievement[]
@@ -197,6 +199,17 @@ model SeriesFinished {
 	series							Series							@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
+
+model SeriesVerifiedBy {
+	series_id						Int									@unique
+	user_id							Int									@unique
+	verified						Boolean							@default(false)
+	verified_date				DateTime?						@updatedAt
+	//// relations
+	series							Series							@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
 
 model SeriesStarted {
 	series_id						Int

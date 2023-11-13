@@ -9,10 +9,11 @@ import { error, success } from 'code/format';
 import { seriesLogo } from '@/lib/upload';
 import UserSeriesRating from 'database/userSeriesRating/controller';
 import SeriesController from 'database/series/controller';
+import SeriesVerifiedByController from 'database/seriesVerifiedBy/controller';
 import SeriesEnigmaOrderController from 'database/seriesEnigmaOrder/controller';
 import SeriesCreationController from 'database/seriesCreator/controller';
 import type { Request, Response, NextFunction } from 'express';
-import type { Series } from '@prisma/client';
+import { SeriesStatus, type Series } from '@prisma/client';
 
 interface SeriesCreateRequest extends Request {
 	body: {
@@ -49,7 +50,7 @@ class serieCRUD {
 			} else
 				return error(req, res, 'SE_002', { data: { seriesCreationFailed: true } }).res;
 		}
-		if (!serie || typeof serie === 'boolean')
+		if (!series || typeof series === 'boolean')
 			return error(req, res, 'SE_002', { data: { seriesCreationFailed: true } });
 		return success(req, res, 'SE_101', {
 			data: {
@@ -74,7 +75,7 @@ class serieCRUD {
 	}
 }
 
-class serie extends serieCRUD {
+class series extends serieCRUD {
 	static async getPublishedSeries(req: Request, res: Response, _next: NextFunction) {
 		return success(req, res, 'SE_101', {
 			data: {
@@ -189,26 +190,79 @@ class serie extends serieCRUD {
 			}
 		}).res;
 	}
+
+	static async publishPending(req: Request, res: Response, _next: NextFunction) {
+		if (!Object.keys(req.body).length)
+			return error(req, res, 'RE_001').res;
+		if (!req.body.series_id || typeof req.body.series_id !== 'number')
+			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
+		if (!await SeriesController.thisSeriesIsCreatedByUser(Number(req.body.series_id), req.user.id))
+			return error(req, res, 'SE_003').res;
+		if (await SeriesVerifiedByController.seriesIsVerified(Number(req.body.series_id)))
+			return error(req, res, 'SE_003').res;
+		await SeriesVerifiedByController.create(Number(req.body.series_id));
+		return success(req, res, 'SE_102', {
+			data: {
+				pending: await SeriesController.updatePart(Number(req.body.series_id), 'published', SeriesStatus.PENDING) !== null
+			}
+		}).res;
+	}
+
+	static async unpublish(req: Request, res: Response, _next: NextFunction) {
+		if (!Object.keys(req.body).length)
+			return error(req, res, 'RE_001').res;
+		if (!req.body.series_id || typeof req.body.series_id !== 'number')
+			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
+		if (!await SeriesController.thisSeriesIsCreatedByUser(Number(req.body.series_id), req.user.id))
+			return error(req, res, 'SE_003').res;
+		if (!await SeriesVerifiedByController.seriesIsVerified(Number(req.body.series_id)))
+			return error(req, res, 'SE_003').res;
+		return success(req, res, 'SE_102', {
+			data: {
+				pending: await SeriesController.updatePart(Number(req.body.series_id), 'published', SeriesStatus.UNPUBLISHED) !== null
+			}
+		}).res;
+	}
+
+	static async publishModerator(req: Request, res: Response, _next: NextFunction) {
+		if (!Object.keys(req.body).length)
+			return error(req, res, 'RE_001').res;
+		if (!req.body.series_id || typeof req.body.series_id !== 'number')
+			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
+		if (!await SeriesVerifiedByController.isModeratorOfSeries(Number(req.body.series_id), req.user.id))
+			return error(req, res, 'SE_003').res;
+		return success(req, res, 'SE_102', {
+			data: {
+				pending: await SeriesController.updatePart(Number(req.body.series_id), 'published', SeriesStatus.PUBLISHED) !== null
+			}
+		}).res;
+	}
 }
 
 export default Router()
-	.get('/createByUser', jwtMiddleware.acceptUser, asyncHandler(serie.getCreatedByUser))
-	.get('/published', asyncHandler(serie.getPublishedSeries))
-	.get('/user', jwtMiddleware.acceptUser, asyncHandler(serie.getSeriesLinkedToUser))
+	.get('/createByUser', jwtMiddleware.acceptUser, asyncHandler(series.getCreatedByUser))
+	.get('/published', asyncHandler(series.getPublishedSeries))
+	.get('/user', jwtMiddleware.acceptUser, asyncHandler(series.getSeriesLinkedToUser))
 
-	.post('/create', jwtMiddleware.acceptUser, asyncHandler(serie.create))
-	.post('/isCreatedByUser', jwtMiddleware.acceptUser, asyncHandler(serie.thisSeriesIsCreatedByUser))
-	.post('/one', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.findOne(req, res, next, false)))
+	.post('/create', jwtMiddleware.acceptUser, asyncHandler(series.create))
+	.post('/isCreatedByUser', jwtMiddleware.acceptUser, asyncHandler(series.thisSeriesIsCreatedByUser))
+	.post('/one', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => series.findOne(req, res, next, false)))
 
-	.post('/one/rating/user', jwtMiddleware.acceptUser, asyncHandler(serie.findUserRating))
-	.post('/one/rating', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => serie.findOne(req, res, next, true)))
-	.put('/one/rating', jwtMiddleware.acceptUser, asyncHandler(serie.putUserRating))
+	.post('/one/rating/user', jwtMiddleware.acceptUser, asyncHandler(series.findUserRating))
+	.post('/one/rating', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => series.findOne(req, res, next, true)))
+	.put('/one/rating', jwtMiddleware.acceptUser, asyncHandler(series.putUserRating))
 
 	.post('/update/image', jwtMiddleware.acceptUser, seriesLogo.middleware.single('image'), asyncHandler(seriesLogo.check))
 	.post('/update/:path', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => {
+		if (!['title', 'description', 'order'].includes(req.params.path))
+			return;
 		if (req.params.path.localeCompare('order') === 0)
-			return serie.updateEnigmaOrder(req, res, next);
-		return serie.updatePart(req.params.path as 'title' | 'description' | 'published', req, res, next);
+			return series.updateEnigmaOrder(req, res, next);
+		return series.updatePart(req.params.path as 'title' | 'description', req, res, next);
 	}))
 
-	.delete('/:id', jwtMiddleware.acceptUser, asyncHandler(serie.delete));
+	.post('/publish', jwtMiddleware.acceptModerator, asyncHandler(series.publishModerator))
+	.post('/publish/pending', jwtMiddleware.acceptUser, asyncHandler(series.publishPending))
+	.post('/publish/unpublish', jwtMiddleware.acceptUser, asyncHandler(series.unpublish))
+
+	.delete('/:id', jwtMiddleware.acceptUser, asyncHandler(series.delete));
