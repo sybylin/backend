@@ -8,6 +8,7 @@ import { checkAchievement } from '@/achievement';
 import { enigmaContent, enigmaLogo } from 'lib/upload';
 import SeriesController from 'database/series/controller';
 import SeriesEnigmaOrder from 'database/seriesEnigmaOrder/controller';
+import SeriesVerifiedBy from 'database/seriesVerifiedBy/controller';
 import EnigmaController from 'database/enigma/controller';
 import EnigmaContentController from 'database/enigmaContent/controller';
 import EnigmaCreatorController from 'database/enigmaCreator/controller';
@@ -73,7 +74,7 @@ class enigmaCRUD {
 			return error(req, res, 'RE_002', { data: { key: 'title' } }).res;
 		if (!req.body.description || typeof req.body.description !== 'string')
 			return error(req, res, 'RE_002', { data: { key: 'description' } }).res;
-		if (!await SeriesController.thisSeriesIsCreatedByUser(Number(req.body.series_id), req.user.id))
+		if (!await SeriesController.userRight(Number(req.body.series_id), req.user.id))
 			return error(req, res, 'SE_003').res;
 
 		const enigma = await EnigmaController.create({
@@ -263,6 +264,19 @@ class enigma extends enigmaCRUD {
 			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
 		if (devOrProd === 'dev' && !await EnigmaCreatorController.thisEnigmaIsCreatedByUser(Number(req.body.enigma_id), req.user.id))
 			return error(req, res, 'SE_003').res;
+
+		const getSolution = async () => {
+			if (
+				req.user.role !== 'USER' &&
+				await SeriesVerifiedBy.isModeratorOfSeries(req.body.series_id, req.user.id) &&
+				!await SeriesVerifiedBy.seriesIsVerified(req.body.series_id)
+			)
+				return await EnigmaSolutionController.find(req.body.enigma_id);
+			if (devOrProd === 'prod')
+				return (await EnigmaSolutionController.findType(Number(req.body.enigma_id)))?.type;
+			return undefined;
+		};
+
 		return success(req, res, 'SE_102', {
 			data: {
 				enigma: (devOrProd === 'dev')
@@ -271,9 +285,7 @@ class enigma extends enigmaCRUD {
 				info: (devOrProd === 'prod')
 					? await EnigmaController.findOneInfo(Number(req.body.enigma_id))
 					: undefined,
-				solution: (devOrProd === 'prod')
-					? (await EnigmaSolutionController.findType(Number(req.body.enigma_id)))?.type
-					: undefined,
+				solution: await getSolution(),
 				objectSolutionKeys: (devOrProd === 'prod')
 					? (await EnigmaSolutionController.getListOfKeys(Number(req.body.enigma_id)))
 					: undefined
@@ -316,8 +328,17 @@ export default Router()
 			return enigma.verifySolution(req, res, next);
 		}
 	}))
-	.post('/page/:type', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.getPage(req, res, next, req.params.type as 'dev' | 'prod')))
-	.put('/page/:type', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.savePage(req, res, next, req.params.type as 'dev' | 'prod')))
+
+	.post('/page/:type', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => {
+		if (['dev', 'prod'].includes(req.params.type))
+			return enigma.getPage(req, res, next, req.params.type as 'dev' | 'prod');
+		return next();
+	}))
+	.put('/page/:type', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => {
+		if (['dev', 'prod'].includes(req.params.type))
+			return enigma.savePage(req, res, next, req.params.type as 'dev' | 'prod');
+		next();
+	}))
 
 	.post('/update/image', jwtMiddleware.acceptUser, enigmaLogo.middleware.single('image'), asyncHandler(enigmaLogo.check))
 	.post('/update/:type', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.updatePart(req.params.type as 'title' | 'description', req, res, next)))

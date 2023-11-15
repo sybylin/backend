@@ -36,17 +36,17 @@ const cleanSeries = (e: any) => {
 		id: e.id,
 		title: e.title,
 		image: e.image,
-		rating: (e.user_series_rating.length)
+		rating: (e.user_series_rating && e.user_series_rating.length)
 			? (e.user_series_rating.reduce((prev: any, curr: any) => prev + curr.rating, 0) / e.user_series_rating.length)
 			: 2.5,
 		modification_date: e.modification_date,
-		series_finished: (e.series_finished.length)
+		series_finished: (e.series_finished && e.series_finished.length)
 			? e.series_finished[0].completion_date
 			: null,
-		series_started: (e.series_started.length)
+		series_started: (e.series_started && e.series_started.length)
 			? e.series_started[0].started_date
 			: null,
-		creator: (e.series_creator.length)
+		creator: (e.series_creator && e.series_creator.length)
 			? e.series_creator[0].user
 			: null
 	};
@@ -79,11 +79,14 @@ export default class controller {
 				published: true,
 				modification_date: true,
 				series_creator: {
-					where: {
-						user_id
-					},
 					select: {
-						user_id: true
+						user_id: true,
+						user: {
+							select: {
+								name: true,
+								avatar: true
+							}
+						}
 					}
 				},
 				series_enigma_order: {
@@ -108,19 +111,20 @@ export default class controller {
 					orderBy: [
 						{ order: 'asc' }
 					]
+				},
+				series_verified_by: {
+					select: {
+						rejectionReason: true
+					}
 				}
 			}
 		});
 		if (!__series)
 			return null;
 		let isCreator = false;
-		if (
-			__series.series_creator &&
-			__series.series_creator.length &&
-			__series.series_creator.findIndex((s) => s.user_id === user_id) !== -1
-		)
+		if (__series.series_creator.findIndex((s) => s.user_id === user_id) !== -1)
 			isCreator = true;
-		delete (__series as Record<string, any>)['series_creator'];
+		(__series as Record<string, any>).series_creator = __series.series_creator[0].user;
 		return (isCreator || __series.published)
 			? __series
 			: false;
@@ -299,23 +303,6 @@ export default class controller {
 		})).map(cleanSeries);
 	}
 
-	static async thisSeriesIsCreatedByUser(series_id: number, user_id: number): Promise<boolean> {
-		return (await series.findUnique({
-			where: {
-				id: series_id,
-				series_creator: {
-					some: {
-						user_id
-					}
-				}
-			},
-			select: {
-				id: true
-			}
-		}) !== null
-		);
-	}
-
 	static async updatePart(series_id: number, part: 'title' | 'description' | 'image' | 'published', data: string | number | boolean): Promise<unknown> {
 		const obj: Record<string, string | number | boolean> = {};
 		const select: Record<string, boolean> = {};
@@ -369,5 +356,66 @@ export default class controller {
 		return (ret._count._all === 1)
 			? ret._sum.rating
 			: ret._sum.rating / ret._count._all;
+	}
+
+	static async findPending(user_id: number): Promise<getSeries[] | null> {
+		return (await series.findMany({
+			where: {
+				published: SeriesStatus.PENDING,
+				series_verified_by: {
+					user_id
+				}
+			},
+			select: {
+				id: true,
+				image: true,
+				title: true,
+				modification_date: true,
+				series_creator: {
+					select: {
+						user: {
+							select: {
+								name: true,
+								avatar: true
+							}
+						}
+					}
+				}
+			},
+			orderBy: [
+				{
+					modification_date: 'desc'
+				}
+			]
+		})).map(cleanSeries);
+	}
+
+	static async userRight(series_id: number, user_id: number): Promise<boolean> {
+		const _series_ = await series.findUnique({
+			where: {
+				id: series_id
+			},
+			select: {
+				published: true,
+				series_creator: {
+					select: {
+						user_id: true
+					}
+				},
+				series_verified_by: {
+					select: {
+						user_id: true,
+						verified: true
+					}
+				}
+			}
+		});
+		if (!_series_)
+			return false;
+		return (
+			(_series_.series_creator.length && _series_.series_creator.findIndex((e) => e.user_id === user_id) !== -1) ||
+			(_series_.published === 'PUBLISHED' && _series_.series_verified_by?.verified) ||
+			(_series_.published === 'PENDING' && _series_.series_verified_by?.user_id === user_id)
+		);
 	}
 }

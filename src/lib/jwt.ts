@@ -109,7 +109,7 @@ export class jwtMiddleware {
 					)
 				)
 					return next();
-				return error(req, res, 'JW_002', { status: 401 }).res;
+				return error(req, res, 'JW_002', {status: 401, data: { role: req.user.role.toLowerCase() }}).res;
 			})
 			.catch((e) => {
 				log.error(e);
@@ -132,7 +132,7 @@ export class jwtMiddleware {
 					)
 				)
 					return next();
-				return error(req, res, 'JW_002', { status: 401 }).res;
+				return error(req, res, 'JW_002', { status: 401, data: { role: req.user.role.toLowerCase() }}).res;
 			})
 			.catch((e) => {
 				log.error(e);
@@ -150,7 +150,7 @@ export class jwtMiddleware {
 					return hasError.res;
 				if (req.user && req.user.role === Role.ADMINISTRATOR)
 					return next();
-				return error(req, res, 'JW_002', { status: 401 }).res;
+				return error(req, res, 'JW_002', { status: 401, data: { role: req.user.role.toLowerCase() }}).res;
 			})
 			.catch((e) => {
 				log.error(e);

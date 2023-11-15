@@ -16,11 +16,21 @@ export default class controller {
 			ORDER BY RANDOM()
 			LIMIT 1
 		`;
-		return seriesVerifiedBy.create({
-			data: {
+		// if (seriesVerifiedBy.findUnique({ where: { series_id: series_id, } }))
+
+		return seriesVerifiedBy.upsert({
+			where: {
+				series_id
+			},
+			create: {
 				series_id: series_id,
 				user_id: randomSelectUser[0].id,
 				verified: false,
+			},
+			update: {
+				user_id: randomSelectUser[0].id,
+				verified: false,
+				rejectionReason: null
 			}
 		});
 	}
@@ -49,7 +59,7 @@ export default class controller {
 		}) !== null;
 	}
 
-	static async setVerifiedStatus(data: Omit<SeriesVerifiedBy, 'verified' | 'verified_date'>, verified: boolean): Promise<{ verified: boolean, verified_date: Date | null }> {
+	static async setVerifiedStatus(data: Omit<SeriesVerifiedBy, 'verified' | 'verified_date' | 'rejectionReason'>, verified: boolean): Promise<{ verified: boolean, verified_date: Date | null }> {
 		return seriesVerifiedBy.update({
 			where: {
 				series_id: data.series_id,
@@ -63,6 +73,22 @@ export default class controller {
 				verified
 			}
 		});
+	}
+
+	static async setRejectionReason(data: Omit<SeriesVerifiedBy, 'verified' | 'verified_date' | 'rejectionReason'>, reason: string): Promise<boolean> {
+		return await seriesVerifiedBy.update({
+			where: {
+				series_id: data.series_id,
+				user_id: data.user_id
+			},
+			select: {
+				verified: true
+			},
+			data: {
+				rejectionReason: reason,
+				verified: false
+			}
+		}) !== null;
 	}
 
 	static async delete(data: Omit<SeriesVerifiedBy, 'verified' | 'verified_date'>): Promise<boolean> {

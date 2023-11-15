@@ -28,7 +28,7 @@ export const serieModificationIsAuthorized = async (req: Request, res: Response,
 			return error(req, res, 'RE_001').res;
 		if (!req.body.series_id || typeof req.body.series_id === 'string' && !isNumeric(req.body.series_id))
 			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
-		if (!await SeriesController.thisSeriesIsCreatedByUser(Number(req.body.series_id), req.user.id))
+		if (!await SeriesController.userRight(Number(req.body.series_id), req.user.id))
 			return error(req, res, 'SE_003').res;
 	}
 	if (!Object.keys(req.file as any).length && !req.files?.length)

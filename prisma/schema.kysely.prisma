@@ -204,6 +204,7 @@ model SeriesVerifiedBy {
 	series_id						Int									@unique
 	user_id							Int									@unique
 	verified						Boolean							@default(false)
+	rejectionReason			String?
 	verified_date				DateTime?						@updatedAt
 	//// relations
 	series							Series							@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
