@@ -15,13 +15,13 @@ import { userProfil } from 'lib/upload';
 import asyncHandler from 'lib/asyncHandler';
 import { checkAchievement } from '@/achievement';
 import TokenController from 'database/token/controller';
-import UserController, { FullUser } from 'database/user/controller';
+import UserController from 'database/user/controller';
+import UserBlockedController from 'database/userBlocked/controller';
 import { enumCheckUser } from 'database/user/controller';
 import { verifyRequest, generateToken } from './utility';
 import { initPasswordReset, resetPassword } from './resetPassword';
 
 import type { Request, NextFunction, Response } from 'express';
-import type { User } from '@prisma/client';
 
 class accountCRUD {
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -292,14 +292,13 @@ class account extends accountCRUD {
 	}
 
 	static async updateRole(req: Request, res: Response, next: NextFunction) {
-		const hasError = verifyRequest(req, res, false, false);
-		if (hasError)
-			return hasError.res;
+		if (!req.body.id || typeof req.body.id !== 'number')
+			return error(req, res, 'RE_002', { data: { key: 'id' } }).res;
 		if (!req.body.role || isEmpty(req.body.role) || !isString(req.body.role))
 			return error(req, res, 'RE_002', { data: { key: 'role' } }).res;
-
-		await UserController.updateRole(req.body.name, req.body.role)
-			.catch(() => next(new Error(getInfo('GE_002').message)));
+		if (req.body.id === req.user.id)
+			return error(req, res, 'US_030').res;
+		await UserController.updateRole(req.body.id, req.body.role);
 		return success(req, res, 'US_122', {
 			data: {
 				roleIsUpdate: true
@@ -307,16 +306,46 @@ class account extends accountCRUD {
 		}).res;
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	static async getPoints(req: Request, res: Response, _next: NextFunction) {
-		if (req.user) {
-			return success(req, res, 'US_107', {
+	static async updateBlock(req: Request, res: Response, next: NextFunction) {
+		if (!req.body.id || typeof req.body.id !== 'number')
+			return error(req, res, 'RE_002', { data: { key: 'id' } }).res;
+		if (req.body.id === req.user.id)
+			return error(req, res, 'US_030').res;
+		if (req.body.date) {
+			return success(req, res, 'US_122', {
 				data: {
-					points: await UserController.getPoints(req.user.id)
+					userBlocked: await UserBlockedController.create({
+						user_id: Number(req.body.id),
+						blocked_by: req.user.id,
+						end_date: req.body.date
+					}) !== null
 				}
 			}).res;
 		}
-		return error(req, res, 'US_001');
+		return success(req, res, 'US_122', {
+			data: {
+				userBlocked: await UserBlockedController.delete(Number(req.body.id))
+			}
+		}).res;
+	}
+
+	static async getPoints(req: Request, res: Response, _next: NextFunction) {
+		return success(req, res, 'US_107', {
+			data: {
+				points: await UserController.getPoints(req.user.id)
+			}
+		}).res;
+	}
+
+	static async getUserList(req: Request, res: Response, _next: NextFunction) {
+		const pageNumber = (req.params.page && Number(req.params.page) > 0)
+			? Number(req.params.page)
+			: 1;
+		return success(req, res, 'US_131', {
+			data: {
+				users: await UserController.cleanFindAll(pageNumber)
+			}
+		});
 	}
 }
 
@@ -326,7 +355,9 @@ export default Router()
 	.get('/all', jwtMiddleware.acceptUser, asyncHandler(account.getAllHisInfo))
 	.get('/points', jwtMiddleware.acceptUser, asyncHandler(account.getPoints))
 	.get('/logout', jwtMiddleware.acceptUser, asyncHandler(account.logout))
+	.get('/list/:page?', jwtMiddleware.acceptAdministrator, asyncHandler(account.getUserList))
 
+	.post('/block', jwtMiddleware.acceptAdministrator, asyncHandler(account.updateBlock))
 	.post('/create', asyncHandler(account.create))
 	.post('/check', asyncHandler(account.checkUser))
 	.post('/token', asyncHandler(account.token))

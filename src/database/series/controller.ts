@@ -114,7 +114,7 @@ export default class controller {
 				},
 				series_verified_by: {
 					select: {
-						rejectionReason: true
+						rejection_reason: true
 					}
 				}
 			}

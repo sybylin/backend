@@ -219,7 +219,7 @@ class series extends serieCRUD {
 		const isModerator = await SeriesVerifiedByController.isModeratorOfSeries(Number(req.body.series_id), req.user.id);
 		const isVerified = await SeriesVerifiedByController.seriesIsVerified(Number(req.body.series_id));
 		if (isModerator && (req.body.reason || typeof req.body.reason === 'string')) {
-			await SeriesVerifiedByController.setRejectionReason(
+			await SeriesVerifiedByController.setrejection_reason(
 				{ series_id: Number(req.body.series_id), user_id: req.user.id },
 				req.body.reason
 			);

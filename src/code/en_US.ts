@@ -59,6 +59,7 @@ const list: {
 		US_020: 'Password reset initialization failed',
 		US_021: 'Passwords aren\'t the same',
 		US_022: 'Reset link does not exist or is no longer valid',
+		US_030: 'You cannot change your own role',
 
 		US_101: 'User has been successfully authenticated',
 		US_102: 'Verification is awaiting a response',
@@ -70,7 +71,8 @@ const list: {
 		US_108: 'User is recognized',
 		US_120: 'Password reset initialization started',
 		US_121: 'Password reset successful',
-		US_122: 'Role is updated'
+		US_122: 'Role is updated',
+		US_131: 'Users list'
 	},
 	enigma: {
 		EN_001: 'Incorrect id',

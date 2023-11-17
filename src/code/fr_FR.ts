@@ -67,7 +67,8 @@ const list: {
 		US_107: 'L\'utilisateur existe',
 		US_108: 'L\'utilisateur a été reconnu',
 		US_120: 'L\'initialisation de la réinitialisation du mot de passe a commencé',
-		US_122: 'Le rôle est mis à jour'
+		US_122: 'Le rôle est mis à jour',
+		US_131: 'Liste d\'utilisateurs'
 	},
 	enigma: {
 		EN_001: 'Identifiant incorrect',

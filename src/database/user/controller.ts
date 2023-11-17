@@ -1,24 +1,20 @@
 import * as argon2 from 'argon2';
 import { user, enigmaFinished, seriesFinished, userAchievement } from 'database/db.instance';
+import checkDate from 'src/database/userBlocked/checkDate';
 import { User, Role } from '@prisma/client';
 
 export interface CleanUser {
 	id: number;
   name: string;
 	email: string;
+	avatar: string | null;
 	role: Role;
-  avatar: string | null;
-  verify: boolean | null;
+	verify: boolean | null;
+	blocked: boolean;
 	creation_date: Date | null;
 }
 
-export interface FullUser {
-  name: string;
-	email: string;
-	role: Role,
-  avatar: string | null;
-  verify: boolean | null;
-	creation_date: Date | null;
+export interface FullUser extends CleanUser {
 	modification_date: Date | null;
 }
 
@@ -28,6 +24,52 @@ export enum enumCheckUser {
 	INCORRECT_PASSWORD,
 	ERROR
 }
+
+type genCleanUserType = {
+	id: number;
+	avatar: string | null;
+	creation_date: Date | null;
+	modification_date: Date | null;
+	name: string;
+	email: string;
+	role: Role;
+	verify: boolean | null;
+	user_blocked: { end_date: Date } | null;
+} | null;
+const selectForGenCleanUser = {
+	id: true,
+	user_blocked: {
+		select: {
+			end_date: true
+		}
+	},
+	name: true,
+	email: true,
+	avatar: true,
+	role: true,
+	verify: true,
+	creation_date: true,
+	modification_date: true,
+};
+const genCleanUser = (user: genCleanUserType, cleanUser: boolean): FullUser | CleanUser | null => {
+	if (!user)
+		return null;
+	return {
+		id: user.id,
+		name: user.name,
+		email:  user.email,
+		avatar:  user.avatar,
+		role:  user.role,
+		blocked: (user.user_blocked)
+			? checkDate(user.user_blocked.end_date)
+			: false,
+		verify:  user.verify,
+		creation_date: user.creation_date,
+		modification_date: (!cleanUser)
+			? user.modification_date
+			: undefined
+	};
+};
 
 export default class controller {
 	static async create(data: Omit<User, 'id' | 'avatar' | 'creation_date' | 'modification_date'>): Promise<{ name: string, email: string } | null> {
@@ -66,43 +108,29 @@ export default class controller {
 		});
 	}
 
-	static cleanFindOneFull(nameOrId: string | number): Promise<FullUser | null> {
-		return user.findUnique({
+	static async cleanFindOneFull(nameOrId: string | number): Promise<FullUser | null> {
+		const getUser = await user.findUnique({
 			where: (typeof nameOrId === 'number')
 				? { id: nameOrId }
 				: { name: nameOrId },
-			select: {
-				name: true,
-				email: true,
-				avatar: true,
-				role: true,
-				verify: true,
-				creation_date: true,
-				modification_date: true,
-			}
+			select: selectForGenCleanUser
 		});
+		return genCleanUser(getUser, false) as FullUser;
 	}
 
-	static async cleanFindOne(name: string): Promise<CleanUser | null> {
-		return user.findUnique({
-			where: {
-				name
-			},
-			select: {
-				id: true,
-				name: true,
-				email: true,
-				role: true,
-				avatar: true,
-				verify: true,
-				creation_date: true
-			}
+	static async cleanFindOne(nameOrId: string | number): Promise<CleanUser | null> {
+		const getUser = await user.findUnique({
+			where: (typeof nameOrId === 'number')
+				? { id: nameOrId }
+				: { name: nameOrId },
+			select: selectForGenCleanUser
 		});
+		return genCleanUser(getUser, true) as CleanUser;
 	}
 
 	/**
 	 * @param page One page contains 100 users
-	 * Users order by creation_date, not by id
+	 * Users order by name, not by id
 	 */
 	static async cleanFindAll(page?: number): Promise<CleanUser[] | null> {
 		const inc = 100;
@@ -110,26 +138,18 @@ export default class controller {
 			? inc * (page - 1)
 			: 0;
 		
-		return user.findMany({
-			select: {
-				id: true,
-				name: true,
-				email: true,
-				role: true,
-				avatar: true,
-				verify: true,
-				creation_date: true
-			},
+		return (await user.findMany({
+			select: selectForGenCleanUser,
 			skip,
 			take: (page)
 				? inc
 				: undefined,
 			orderBy: [
 				{
-					creation_date: 'desc'
+					name: 'desc'
 				}
 			]
-		});
+		})).map((e) => genCleanUser(e, true) as CleanUser);
 	}
 
 	static async check(
@@ -179,7 +199,7 @@ export default class controller {
 		data: Omit<User, 'avatar' | 'role' | 'creation_date' | 'modification_date' | 'last_connection'>,
 		passNotChange: boolean = false
 	): Promise<CleanUser> {
-		return user.update({
+		const getUser = await user.update({
 			where: {
 				id: data.id
 			},
@@ -199,16 +219,10 @@ export default class controller {
 					token: data.token,
 					token_deadline: data.token_deadline
 				},
-			select: {
-				id: true,
-				name: true,
-				email: true,
-				role: true,
-				avatar: true,
-				verify: true,
-				creation_date: true
-			}
+			select: selectForGenCleanUser
 		});
+
+		return genCleanUser(getUser, true) as CleanUser;
 	}
 
 	static async updatePassword(user_id: number, new_password: string): Promise<boolean> {
@@ -227,20 +241,18 @@ export default class controller {
 		return (update !== null);
 	}
 
-	static async updateRole(idOrName: number | string, new_role: Role): Promise<boolean> {
-		const update = await user.update({
-			where: (typeof idOrName === 'number')
-				? { id: idOrName }
-				: { name: idOrName },
+	static async updateRole(id: number, new_role: Role): Promise<boolean> {
+		return await user.update({
+			where: {
+				id
+			},
 			data: {
-				role: new_role
+				role: new_role,
 			},
 			select: {
 				id: true
 			}
-		});
-
-		return (update !== null);
+		}) !== null;
 	}
 
 	static async updateAvatar(idOrName: number | string, avatar: string): Promise<{ avatar: string | null } | null> {

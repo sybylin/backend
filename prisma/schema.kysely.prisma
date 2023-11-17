@@ -105,6 +105,8 @@ model User {
 	series_started			SeriesStarted[]
 
 	user_achievement		UserAchievement[]
+	user_blocked				UserBlocked?				@relation("UserBlocked")
+	user_blocked_by			UserBlocked?				@relation("UserBlockedBy")
 	user_reset_password	UserResetPassword[]
 	user_series_rating	UserSeriesRating[]
 
@@ -204,7 +206,7 @@ model SeriesVerifiedBy {
 	series_id						Int									@unique
 	user_id							Int									@unique
 	verified						Boolean							@default(false)
-	rejectionReason			String?
+	rejection_reason		String?
 	verified_date				DateTime?						@updatedAt
 	//// relations
 	series							Series							@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -232,6 +234,15 @@ model UserAchievement {
 	//// relations
 	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 	achievement					Achievement					@relation(fields: [achievement_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model UserBlocked {
+	user_id							Int									@unique
+	blocked_by					Int									@unique
+	end_date						DateTime
+	//// relations
+	blocked							User								@relation(name: "UserBlocked", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+	by									User								@relation(name: "UserBlockedBy", fields: [blocked_by], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model UserResetPassword {

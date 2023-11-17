@@ -30,7 +30,7 @@ export default class controller {
 			update: {
 				user_id: randomSelectUser[0].id,
 				verified: false,
-				rejectionReason: null
+				rejection_reason: null
 			}
 		});
 	}
@@ -59,7 +59,7 @@ export default class controller {
 		}) !== null;
 	}
 
-	static async setVerifiedStatus(data: Omit<SeriesVerifiedBy, 'verified' | 'verified_date' | 'rejectionReason'>, verified: boolean): Promise<{ verified: boolean, verified_date: Date | null }> {
+	static async setVerifiedStatus(data: Omit<SeriesVerifiedBy, 'verified' | 'verified_date' | 'rejection_reason'>, verified: boolean): Promise<{ verified: boolean, verified_date: Date | null }> {
 		return seriesVerifiedBy.update({
 			where: {
 				series_id: data.series_id,
@@ -75,7 +75,7 @@ export default class controller {
 		});
 	}
 
-	static async setRejectionReason(data: Omit<SeriesVerifiedBy, 'verified' | 'verified_date' | 'rejectionReason'>, reason: string): Promise<boolean> {
+	static async setrejection_reason(data: Omit<SeriesVerifiedBy, 'verified' | 'verified_date' | 'rejection_reason'>, reason: string): Promise<boolean> {
 		return await seriesVerifiedBy.update({
 			where: {
 				series_id: data.series_id,
@@ -85,7 +85,7 @@ export default class controller {
 				verified: true
 			},
 			data: {
-				rejectionReason: reason,
+				rejection_reason: reason,
 				verified: false
 			}
 		}) !== null;

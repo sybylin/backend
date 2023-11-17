@@ -1,10 +1,10 @@
-import type { ColumnType } from "kysely";
+import type { ColumnType } from 'kysely';
 export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
-import type { Role, SeriesStatus, Solution } from "./enums";
+import type { Role, SeriesStatus, Solution } from './enums';
 
 export type Achievement = {
     id: Generated<number>;
@@ -74,6 +74,13 @@ export type SeriesStarted = {
     user_id: number;
     started_date: Generated<Timestamp | null>;
 };
+export type SeriesVerifiedBy = {
+    series_id: number;
+    user_id: number;
+    verified: Generated<boolean>;
+    rejection_reason: string | null;
+    verified_date: Timestamp | null;
+};
 export type Token = {
     user_id: number;
     token: string;
@@ -99,6 +106,11 @@ export type UserAchievement = {
     achievement_id: number;
     unlocking_date: Generated<Timestamp | null>;
 };
+export type UserBlocked = {
+    user_id: number;
+    blocked_by: number;
+    end_date: Timestamp;
+};
 export type UserResetPassword = {
     user_id: number;
     token: string;
@@ -122,9 +134,11 @@ export type DB = {
     SeriesEnigmaOrder: SeriesEnigmaOrder;
     SeriesFinished: SeriesFinished;
     SeriesStarted: SeriesStarted;
+    SeriesVerifiedBy: SeriesVerifiedBy;
     Token: Token;
     User: User;
     UserAchievement: UserAchievement;
+    UserBlocked: UserBlocked;
     UserResetPassword: UserResetPassword;
     UserSeriesRating: UserSeriesRating;
 };
