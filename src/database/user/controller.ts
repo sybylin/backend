@@ -1,5 +1,5 @@
 import * as argon2 from 'argon2';
-import { user, enigmaFinished, seriesFinished, userAchievement } from 'database/db.instance';
+import prisma, { user, enigmaFinished, seriesFinished, userAchievement } from 'database/db.instance';
 import checkDate from 'src/database/userBlocked/checkDate';
 import { User, Role } from '@prisma/client';
 
@@ -35,6 +35,7 @@ type genCleanUserType = {
 	role: Role;
 	verify: boolean | null;
 	user_blocked: { end_date: Date } | null;
+	end_date?: Date | null;
 } | null;
 const selectForGenCleanUser = {
 	id: true,
@@ -57,13 +58,15 @@ const genCleanUser = (user: genCleanUserType, cleanUser: boolean): FullUser | Cl
 	return {
 		id: user.id,
 		name: user.name,
-		email:  user.email,
-		avatar:  user.avatar,
-		role:  user.role,
-		blocked: (user.user_blocked)
-			? checkDate(user.user_blocked.end_date)
-			: false,
-		verify:  user.verify,
+		email: user.email,
+		avatar: user.avatar,
+		role: user.role,
+		blocked: (user.end_date)
+			? checkDate(user.end_date)
+			: (user.user_blocked)
+				? checkDate(user.user_blocked.end_date)
+				: false,
+		verify: user.verify,
 		creation_date: user.creation_date,
 		modification_date: (!cleanUser)
 			? user.modification_date
@@ -131,25 +134,40 @@ export default class controller {
 	/**
 	 * @param page One page contains 100 users
 	 * Users order by name, not by id
+	 * 
+	 * CREATE EXTENSION pg_trgm;
 	 */
-	static async cleanFindAll(page?: number): Promise<CleanUser[] | null> {
-		const inc = 100;
-		const skip = (page && page >= 0)
-			? inc * (page - 1)
-			: 0;
-		
-		return (await user.findMany({
-			select: selectForGenCleanUser,
-			skip,
-			take: (page)
-				? inc
-				: undefined,
-			orderBy: [
-				{
-					name: 'desc'
-				}
-			]
-		})).map((e) => genCleanUser(e, true) as CleanUser);
+	static async cleanFindAll(
+		sort: { key: 'name' | 'creation_date', value: 'ASC' | 'DESC' },
+		lastElement: string,
+		search?: string
+	): Promise<CleanUser[] | null> {
+		const where = [];
+
+		if (lastElement !== null || search)
+			where.push('WHERE');
+		if (lastElement !== null) {
+			where.push(sort.key);
+			where.push(sort.value === 'ASC'
+				? '>'
+				: '<'
+			);
+			where.push(sort.key === 'creation_date'
+				? `timestamp without time zone '${lastElement}'`
+				: `'${lastElement}'`);
+			if (search)
+				where.push('AND');
+		}
+		if (search)
+			where.push(`SIMILARITY(public."User".name, '${search}') > 0.4`);
+		return (await prisma.$queryRawUnsafe(`
+			SELECT id, name, email, avatar, role, verify, creation_date, end_date
+			FROM public."User"
+			LEFT JOIN public."UserBlocked" ON public."User".id = public."UserBlocked".user_id
+			${where.join(' ')}
+			ORDER BY ${sort.key} ${sort.value}
+			LIMIT 100
+		`) as genCleanUserType[]).map((e)=> genCleanUser(e, true) as CleanUser);
 	}
 
 	static async check(

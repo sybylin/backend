@@ -4,6 +4,9 @@ import isEmail from 'validator/lib/isEmail';
 import isEmpty from 'validator/lib/isEmpty';
 import isNumeric from 'validator/lib/isNumeric';
 import normalizeEmail from 'validator/lib/normalizeEmail';
+import escape from 'validator/lib/escape';
+import ltrim from 'validator/lib/ltrim';
+import rtrim from 'validator/lib/rtrim';
 import { isString } from 'lodash';
 import { getInfo } from 'code/index';
 import { error, success } from 'code/format';
@@ -338,12 +341,39 @@ class account extends accountCRUD {
 	}
 
 	static async getUserList(req: Request, res: Response, _next: NextFunction) {
-		const pageNumber = (req.params.page && Number(req.params.page) > 0)
-			? Number(req.params.page)
-			: 1;
+		if (!Object.keys(req.body).length)
+			return error(req, res, 'RE_001').res;
+		if (!req.body.sort || typeof req.body.sort !== 'number')
+			return error(req, res, 'RE_002', { data: { key: 'sort' } }).res;
+		if (req.body.last_element && typeof req.body.last_element !== 'string')
+			return error(req, res, 'RE_002', { data: { key: 'last_id' } }).res;
+		if (req.body.search && !isString(req.body.search))
+			return error(req, res, 'RE_002', { data: { key: 'string' } }).res;
+		const sort = (): { key: 'name' | 'creation_date', value: 'ASC' | 'DESC' } => {
+			if (!req.body.sort)
+				return { key: 'name', value: 'ASC' };
+			switch (Number(req.body.sort)) {
+			case 2:
+				return { key: 'name', value: 'DESC' };
+			case 3:
+				return { key: 'creation_date', value: 'ASC' };
+			case 4:
+				return { key: 'creation_date', value: 'DESC' };
+			case 1:
+			default:
+				return { key: 'name', value: 'ASC' };
+			}
+		};
+
 		return success(req, res, 'US_131', {
 			data: {
-				users: await UserController.cleanFindAll(pageNumber)
+				users: await UserController.cleanFindAll(
+					sort(),
+					req.body.last_element ?? null,
+					req.body.search
+						? rtrim(ltrim(escape(req.body.search + '')))
+						: undefined
+				)
 			}
 		});
 	}
@@ -355,11 +385,12 @@ export default Router()
 	.get('/all', jwtMiddleware.acceptUser, asyncHandler(account.getAllHisInfo))
 	.get('/points', jwtMiddleware.acceptUser, asyncHandler(account.getPoints))
 	.get('/logout', jwtMiddleware.acceptUser, asyncHandler(account.logout))
-	.get('/list/:page?', jwtMiddleware.acceptAdministrator, asyncHandler(account.getUserList))
+	.get('/list/:page?/:sort?', jwtMiddleware.acceptAdministrator, asyncHandler(account.getUserList))
 
 	.post('/block', jwtMiddleware.acceptAdministrator, asyncHandler(account.updateBlock))
 	.post('/create', asyncHandler(account.create))
 	.post('/check', asyncHandler(account.checkUser))
+	.post('/list', jwtMiddleware.acceptAdministrator, asyncHandler(account.getUserList))
 	.post('/token', asyncHandler(account.token))
 	.post('/role', jwtMiddleware.acceptAdministrator, asyncHandler(account.updateRole))
 	.post('/reset/init', asyncHandler(initPasswordReset))

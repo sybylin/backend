@@ -6,7 +6,7 @@ generator client {
 datasource db {
   provider	= "postgresql"
   url				= "postgresql://postgres:root@localhost:5432/sibyllin"
-	extensions = [tsm_system_time, tsm_system_rows]
+	extensions = [tsm_system_time, tsm_system_rows, pg_trgm]
 }
 
 // #region Enum

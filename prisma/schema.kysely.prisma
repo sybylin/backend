@@ -3,11 +3,13 @@ generator client {
 	output = "./../src/kysely"
 	fileName = "types.ts"
 	enumFileName = "enums.ts"
+	previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider	= "postgresql"
   url				= "postgresql://root:root@localhost:5432/sibyllin"
+	extensions = [tsm_system_time, tsm_system_rows, pg_trgm]
 }
 
 // #region Enum
