@@ -5,6 +5,9 @@ import { Router } from 'express';
 import { isString } from 'lodash';
 import isEmpty from 'validator/lib/isEmpty';
 import isNumeric from 'validator/lib/isNumeric';
+import escape from 'validator/lib/escape';
+import ltrim from 'validator/lib/ltrim';
+import rtrim from 'validator/lib/rtrim';
 import { error, success } from 'code/format';
 import { seriesLogo } from '@/lib/upload';
 import UserSeriesRating from 'database/userSeriesRating/controller';
@@ -77,9 +80,47 @@ class serieCRUD {
 
 class series extends serieCRUD {
 	static async getPublishedSeries(req: Request, res: Response, _next: NextFunction) {
+		if (!Object.keys(req.body).length)
+			return error(req, res, 'RE_001').res;
+		if (!req.body.sort || typeof req.body.sort !== 'number')
+			return error(req, res, 'RE_002', { data: { key: 'sort' } }).res;
+		if (req.body.id && typeof req.body.id !== 'number')
+			return error(req, res, 'RE_002', { data: { key: 'id' } }).res;
+		if (req.body.last_element && typeof req.body.last_element !== 'string')
+			return error(req, res, 'RE_002', { data: { key: 'last_id' } }).res;
+		if (req.body.search && !isString(req.body.search))
+			return error(req, res, 'RE_002', { data: { key: 'string' } }).res;
+
+		const sort = (): { key: 'public."Series".title' | 'public."Series".creation_date' | 'rating', value: 'ASC' | 'DESC' } => {
+			if (!req.body.sort)
+				return { key: 'public."Series".title', value: 'ASC' };
+			switch (Number(req.body.sort)) {
+			case 2:
+				return { key: 'public."Series".title', value: 'DESC' };
+			case 3:
+				return { key: 'public."Series".creation_date', value: 'ASC' };
+			case 4:
+				return { key: 'public."Series".creation_date', value: 'DESC' };
+			case 5:
+				return { key: 'rating', value: 'ASC' };
+			case 6:
+				return { key: 'rating', value: 'DESC' };
+			case 1:
+			default:
+				return { key: 'public."Series".title', value: 'ASC' };
+			}
+		};
+
 		return success(req, res, 'SE_101', {
 			data: {
-				series: await SeriesController.findAllPublished(req.user?.id ?? -1)
+				series: await SeriesController.findAllPublished(
+					req.body?.id ?? -1,
+					sort(),
+					req.body.last_element ?? null,
+					req.body.search
+						? rtrim(ltrim(escape(req.body.search + '')))
+						: undefined
+				)
 			}
 		}).res;
 	}
@@ -263,10 +304,10 @@ class series extends serieCRUD {
 
 export default Router()
 	.get('/createByUser', jwtMiddleware.acceptUser, asyncHandler(series.getCreatedByUser))
-	.get('/published', asyncHandler(series.getPublishedSeries))
 	.get('/user', jwtMiddleware.acceptUser, asyncHandler(series.getSeriesLinkedToUser))
 
 	.post('/create', jwtMiddleware.acceptUser, asyncHandler(series.create))
+	.post('/published', asyncHandler(series.getPublishedSeries))
 	.post('/isCreatedByUser', jwtMiddleware.acceptUser, asyncHandler(series.userRight))
 	.post('/one', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => series.findOne(req, res, next, false)))
 

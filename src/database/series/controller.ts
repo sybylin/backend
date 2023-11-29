@@ -1,4 +1,4 @@
-import { series, enigma, userSeriesRating } from 'database/db.instance';
+import prisma, { series, enigma, userSeriesRating } from 'database/db.instance';
 import { Series, SeriesStatus } from '@prisma/client';
 
 interface seriesOne {
@@ -134,54 +134,51 @@ export default class controller {
 		return series.findMany();
 	}
 
-	static async findAllPublished(user_id: number): Promise<getSeries[] | null> {
-		return (await series.findMany({
-			where: {
-				published: SeriesStatus.PUBLISHED,
-			},
-			select: {
-				id: true,
-				image: true,
-				title: true,
-				modification_date: true,
-				series_creator: {
-					select: {
-						user: {
-							select: {
-								name: true,
-								avatar: true
-							}
-						}
-					}
-				},
-				series_started: {
-					where: {
-						user_id
-					},
-					select: {
-						started_date: true
-					}
-				},
-				series_finished: {
-					where: {
-						user_id
-					},
-					select: {
-						completion_date: true
-					}
-				},
-				user_series_rating: {
-					select: {
-						rating: true
-					}
-				}
-			},
-			orderBy: [
-				{
-					modification_date: 'desc'
-				}
-			]
-		})).map(cleanSeries);
+	static async findAllPublished(
+		user_id: number,
+		sort: { key: 'public."Series".title' | 'public."Series".creation_date' | 'rating', value: 'ASC' | 'DESC' },
+		lastElement: string | null,
+		search?: string
+	): Promise<getSeries[] | null> {
+		const where = [];
+
+		console.log(sort);
+
+		if (lastElement !== null || search)
+			where.push('WHERE');
+		if (lastElement !== null) {
+			where.push(sort.key);
+			where.push(sort.value === 'ASC'
+				? '>'
+				: '<'
+			);
+			where.push(sort.key === 'public."Series".creation_date'
+				? `timestamp without time zone '${lastElement}'`
+				: `'${lastElement}'`);
+			if (search)
+				where.push('AND');
+		}
+		if (search)
+			where.push(`SIMILARITY(public."Series".title, '${search}') > 0.4`);
+
+		return (await prisma.$queryRawUnsafe(`
+			SELECT public."Series".id, public."Series".image, public."Series".title, public."Series".creation_date,
+				public."User".name, public."User".avatar,
+				public."SeriesStarted".started_date,
+				public."SeriesFinished".completion_date,
+				TRUNC(SUM(public."UserSeriesRating".rating)::decimal / COUNT(public."UserSeriesRating".rating)::decimal, 1) AS rating
+			FROM public."Series"
+			LEFT JOIN public."SeriesCreator" ON public."Series".id = public."SeriesCreator".series_id
+			LEFT JOIN public."User" ON public."SeriesCreator".user_id = public."User".id
+			LEFT JOIN public."SeriesStarted" ON public."SeriesCreator".user_id = ${user_id}
+			LEFT JOIN public."SeriesFinished" ON public."SeriesFinished".user_id = ${user_id}
+			LEFT JOIN public."UserSeriesRating" ON public."UserSeriesRating".series_id = public."Series".id
+			${where.join(' ')}
+			GROUP BY public."Series".id, public."User".name, public."User".avatar,
+				public."SeriesStarted".started_date, public."SeriesFinished".completion_date
+			ORDER BY ${sort.key} ${sort.value}
+			LIMIT 100
+		`));
 	}
 	
 	static async update(data: Series): Promise<Series | null> {

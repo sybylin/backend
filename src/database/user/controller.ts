@@ -139,7 +139,7 @@ export default class controller {
 	 */
 	static async cleanFindAll(
 		sort: { key: 'name' | 'creation_date', value: 'ASC' | 'DESC' },
-		lastElement: string,
+		lastElement: string | null,
 		search?: string
 	): Promise<CleanUser[] | null> {
 		const where = [];

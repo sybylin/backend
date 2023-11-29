@@ -10,6 +10,7 @@ export default {
 		'util', 'express-rate-limit', '@prisma/client',
 		'validator/lib/isEmail', 'validator/lib/normalizeEmail',
 		'validator/lib/isEmpty', 'validator/lib/isNumeric',
+		'validator/lib/escape', 'validator/lib/ltrim', 'validator/lib/rtrim',
 		'file-type', 'multer'
 	],
 	input: 'src/index.ts',

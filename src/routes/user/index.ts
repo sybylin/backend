@@ -385,7 +385,6 @@ export default Router()
 	.get('/all', jwtMiddleware.acceptUser, asyncHandler(account.getAllHisInfo))
 	.get('/points', jwtMiddleware.acceptUser, asyncHandler(account.getPoints))
 	.get('/logout', jwtMiddleware.acceptUser, asyncHandler(account.logout))
-	.get('/list/:page?/:sort?', jwtMiddleware.acceptAdministrator, asyncHandler(account.getUserList))
 
 	.post('/block', jwtMiddleware.acceptAdministrator, asyncHandler(account.updateBlock))
 	.post('/create', asyncHandler(account.create))
