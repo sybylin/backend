@@ -86,10 +86,10 @@ class series extends serieCRUD {
 			return error(req, res, 'RE_002', { data: { key: 'sort' } }).res;
 		if (req.body.id && typeof req.body.id !== 'number')
 			return error(req, res, 'RE_002', { data: { key: 'id' } }).res;
-		if (req.body.last_element && typeof req.body.last_element !== 'string')
-			return error(req, res, 'RE_002', { data: { key: 'last_id' } }).res;
+		if (req.body.last_element && !['string', 'number'].includes(typeof req.body.last_element))
+			return error(req, res, 'RE_002', { data: { key: 'last_element' } }).res;
 		if (req.body.search && !isString(req.body.search))
-			return error(req, res, 'RE_002', { data: { key: 'string' } }).res;
+			return error(req, res, 'RE_002', { data: { key: 'search' } }).res;
 
 		const sort = (): { key: 'public."Series".title' | 'public."Series".creation_date' | 'rating', value: 'ASC' | 'DESC' } => {
 			if (!req.body.sort)
@@ -102,9 +102,9 @@ class series extends serieCRUD {
 			case 4:
 				return { key: 'public."Series".creation_date', value: 'DESC' };
 			case 5:
-				return { key: 'rating', value: 'ASC' };
-			case 6:
 				return { key: 'rating', value: 'DESC' };
+			case 6:
+				return { key: 'rating', value: 'ASC' };
 			case 1:
 			default:
 				return { key: 'public."Series".title', value: 'ASC' };

@@ -142,8 +142,6 @@ export default class controller {
 	): Promise<getSeries[] | null> {
 		const where = [];
 
-		console.log(sort);
-
 		if (lastElement !== null || search)
 			where.push('WHERE');
 		if (lastElement !== null) {
@@ -152,9 +150,12 @@ export default class controller {
 				? '>'
 				: '<'
 			);
-			where.push(sort.key === 'public."Series".creation_date'
-				? `timestamp without time zone '${lastElement}'`
-				: `'${lastElement}'`);
+			if (sort.key === 'public."Series".creation_date')
+				where.push(`timestamp without time zone '${lastElement}'`);
+			else if (sort.key === 'rating')
+				where.push(`${lastElement}::decimal`);
+			else
+				where.push(`'${lastElement}'`);
 			if (search)
 				where.push('AND');
 		}
@@ -166,7 +167,7 @@ export default class controller {
 				public."User".name, public."User".avatar,
 				public."SeriesStarted".started_date,
 				public."SeriesFinished".completion_date,
-				TRUNC(SUM(public."UserSeriesRating".rating)::decimal / COUNT(public."UserSeriesRating".rating)::decimal, 1) AS rating
+				TRUNC(COALESCE((SUM(public."UserSeriesRating".rating)::decimal / COUNT(public."UserSeriesRating".rating)::decimal), 0), 1) AS rating
 			FROM public."Series"
 			LEFT JOIN public."SeriesCreator" ON public."Series".id = public."SeriesCreator".series_id
 			LEFT JOIN public."User" ON public."SeriesCreator".user_id = public."User".id
