@@ -22,35 +22,15 @@ interface seriesOne {
 
 interface getSeries {
 	id: number;
-	title: string;
 	image: string | null;
-	rating: number;
-	modification_date: Date | null;
-	creator: { name: string; avatar: string | null } | null;
-	series_finished: Date | null;
-	series_started: Date | null;
+	title: string;
+	creation_date: Date | null;
+	name: string;
+	avatar: string | null
+	rating?: number;
+	series_finished?: Date | null;
+	series_started?: Date | null;
 }
-
-const cleanSeries = (e: any) => {
-	return {
-		id: e.id,
-		title: e.title,
-		image: e.image,
-		rating: (e.user_series_rating && e.user_series_rating.length)
-			? (e.user_series_rating.reduce((prev: any, curr: any) => prev + curr.rating, 0) / e.user_series_rating.length)
-			: 2.5,
-		modification_date: e.modification_date,
-		series_finished: (e.series_finished && e.series_finished.length)
-			? e.series_finished[0].completion_date
-			: null,
-		series_started: (e.series_started && e.series_started.length)
-			? e.series_started[0].started_date
-			: null,
-		creator: (e.series_creator && e.series_creator.length)
-			? e.series_creator[0].user
-			: null
-	};
-};
 
 export default class controller {
 	static async create(data: Omit<Series, 'id' | 'image' | 'points' | 'published' | 'creation_date' | 'modification_date'>): Promise<Series | null | never> {
@@ -140,43 +120,50 @@ export default class controller {
 		lastElement: string | null,
 		search?: string
 	): Promise<getSeries[] | null> {
-		const where = [];
-
-		if (lastElement !== null || search)
-			where.push('WHERE');
-		if (lastElement !== null) {
-			where.push(sort.key);
-			where.push(sort.value === 'ASC'
-				? '>'
-				: '<'
-			);
-			if (sort.key === 'public."Series".creation_date')
-				where.push(`timestamp without time zone '${lastElement}'`);
-			else if (sort.key === 'rating')
-				where.push(`${lastElement}::decimal`);
-			else
-				where.push(`'${lastElement}'`);
+		const ascDesc = (sort.value === 'ASC')
+			? '>'
+			: '<';
+		const genWhere = () => {
+			let ret = `WHERE public."Series".published = '${SeriesStatus.PUBLISHED}' `;
+			if (lastElement !== null && sort.key === 'rating')
+				return ret;
+			if (lastElement !== null || search)
+				ret += 'AND ';
+			if (!search && lastElement !== null) {
+				ret += `${sort.key} `;
+				ret += `${ascDesc} `;
+				ret += `${(sort.key === 'public."Series".creation_date')
+					? `timestamp without time zone '${lastElement}'`
+					: `'${lastElement}'`} `;
+				if (search)
+					ret += 'AND ';
+			}
 			if (search)
-				where.push('AND');
-		}
-		if (search)
-			where.push(`SIMILARITY(public."Series".title, '${search}') > 0.4`);
+				ret += `SIMILARITY(public."Series".title, '${search}') > 0.4 OR SIMILARITY(public."User".name, '${search}') > 0.4`;
+			return ret;
+		};
+		const genHaving = () => {
+			if (lastElement !== null && sort.key === 'rating')
+				return `HAVING TRUNC(COALESCE(AVG(rating), 0), 1) ${ascDesc} ${lastElement}::decimal`;
+			return '';
+		};
 
 		return (await prisma.$queryRawUnsafe(`
 			SELECT public."Series".id, public."Series".image, public."Series".title, public."Series".creation_date,
 				public."User".name, public."User".avatar,
 				public."SeriesStarted".started_date,
 				public."SeriesFinished".completion_date,
-				TRUNC(COALESCE((SUM(public."UserSeriesRating".rating)::decimal / COUNT(public."UserSeriesRating".rating)::decimal), 0), 1) AS rating
+				TRUNC(COALESCE(AVG(public."UserSeriesRating".rating), 0), 1) as rating
 			FROM public."Series"
 			LEFT JOIN public."SeriesCreator" ON public."Series".id = public."SeriesCreator".series_id
 			LEFT JOIN public."User" ON public."SeriesCreator".user_id = public."User".id
 			LEFT JOIN public."SeriesStarted" ON public."SeriesCreator".user_id = ${user_id}
 			LEFT JOIN public."SeriesFinished" ON public."SeriesFinished".user_id = ${user_id}
 			LEFT JOIN public."UserSeriesRating" ON public."UserSeriesRating".series_id = public."Series".id
-			${where.join(' ')}
+			${genWhere()}
 			GROUP BY public."Series".id, public."User".name, public."User".avatar,
 				public."SeriesStarted".started_date, public."SeriesFinished".completion_date
+			${genHaving()}
 			ORDER BY ${sort.key} ${sort.value}
 			LIMIT 100
 		`));
@@ -241,64 +228,26 @@ export default class controller {
 		});
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	static async findLinkedToUser(user_id: number): Promise<getSeries[]> {
-		return (await series.findMany({
-			where: {
-				published: SeriesStatus.PUBLISHED,
-				series_started: {
-					some: {
-						user_id
-					}
-				},
-				series_finished: {
-					some: {
-						user_id
-					}
-				}
-			},
-			select: {
-				id: true,
-				image: true,
-				title: true,
-				modification_date: true,
-				series_creator: {
-					select: {
-						user: {
-							select: {
-								name: true,
-								avatar: true
-							}
-						}
-					}
-				},
-				series_started: {
-					where: {
-						user_id
-					},
-					select: {
-						started_date: true
-					}
-				},
-				series_finished: {
-					where: {
-						user_id
-					},
-					select: {
-						completion_date: true
-					}
-				},
-				user_series_rating: {
-					select: {
-						rating: true
-					}
-				}
-			},
-			orderBy: [
-				{
-					modification_date: 'desc'
-				}
-			]
-		})).map(cleanSeries);
+		return (await prisma.$queryRawUnsafe(`
+			SELECT public."Series".id, public."Series".image, public."Series".title, public."Series".creation_date,
+				public."User".name, public."User".avatar,
+				TRUNC(COALESCE(AVG(public."UserSeriesRating".rating), 0), 1) as rating,
+				public."SeriesStarted".started_date,
+				public."SeriesFinished".completion_date
+			FROM public."Series"
+			LEFT JOIN public."SeriesCreator" ON public."Series".id = public."SeriesCreator".series_id
+			LEFT JOIN public."User" ON public."SeriesCreator".user_id = public."User".id
+			LEFT JOIN public."UserSeriesRating" ON public."UserSeriesRating".series_id = public."Series".id
+			LEFT JOIN public."SeriesStarted" ON public."SeriesStarted".series_id = public."Series".id AND public."SeriesStarted".user_id = ${user_id}
+			LEFT JOIN public."SeriesFinished" ON public."SeriesStarted".series_id = public."Series".id AND public."SeriesFinished".user_id = ${user_id}
+			WHERE public."Series".published = '${SeriesStatus.PUBLISHED}'
+			GROUP BY public."Series".id, public."User".name, public."User".avatar,
+				public."SeriesStarted".started_date,
+				public."SeriesFinished".completion_date
+			ORDER BY public."Series".creation_date DESC
+		`));
 	}
 
 	static async updatePart(series_id: number, part: 'title' | 'description' | 'image' | 'published', data: string | number | boolean): Promise<unknown> {
@@ -357,35 +306,19 @@ export default class controller {
 	}
 
 	static async findPending(user_id: number): Promise<getSeries[] | null> {
-		return (await series.findMany({
-			where: {
-				published: SeriesStatus.PENDING,
-				series_verified_by: {
-					user_id
-				}
-			},
-			select: {
-				id: true,
-				image: true,
-				title: true,
-				modification_date: true,
-				series_creator: {
-					select: {
-						user: {
-							select: {
-								name: true,
-								avatar: true
-							}
-						}
-					}
-				}
-			},
-			orderBy: [
-				{
-					modification_date: 'desc'
-				}
-			]
-		})).map(cleanSeries);
+		return (await prisma.$queryRawUnsafe(`
+		SELECT public."Series".id, public."Series".image, public."Series".title,
+			public."Series".creation_date, public."User".name, public."User".avatar
+		FROM public."Series"
+		LEFT JOIN public."SeriesCreator" ON public."Series".id = public."SeriesCreator".series_id
+		LEFT JOIN public."User" ON public."SeriesCreator".user_id = public."User".id
+		LEFT JOIN public."SeriesVerifiedBy" ON public."SeriesVerifiedBy".series_id = public."Series".id
+		WHERE public."Series".published = '${SeriesStatus.PENDING}' AND public."SeriesVerifiedBy".user_id = ${user_id}
+		GROUP BY public."Series".id, public."User".name, public."User".avatar,
+			public."SeriesVerifiedBy".verified, public."SeriesVerifiedBy".verified_date,
+			public."SeriesVerifiedBy".rejection_reason
+		ORDER BY public."Series".creation_date DESC
+		`));
 	}
 
 	static async userRight(series_id: number, user_id: number): Promise<boolean> {
