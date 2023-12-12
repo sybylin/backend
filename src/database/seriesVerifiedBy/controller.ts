@@ -48,13 +48,13 @@ export default class controller {
 	}
 
 	static async seriesIsVerified(series_id: number): Promise<boolean> {
-		return await seriesVerifiedBy.findUnique({
+		return await seriesVerifiedBy.findFirst({
 			where: {
 				series_id,
 				verified: true
 			},
 			select: {
-				verified: true
+				series_id: true
 			}
 		}) !== null;
 	}

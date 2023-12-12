@@ -14,7 +14,7 @@ import type { Application, NextFunction, Request, Response } from 'express';
 export default (app: Application): void => {
 	app.use('/', apiLimiter, main);
 	app.use('/achievement', apiLimiter, achievement);
-	app.use('/enigma', apiLimiter, enigma);
+	app.use('/enigmas', apiLimiter, enigma);
 	app.use('/rights', apiLimiter, rights);
 	app.use('/series', apiLimiter, series);
 	app.use('/user', apiLimiter, user);

@@ -282,13 +282,13 @@ class enigma extends enigmaCRUD {
 				enigma: (devOrProd === 'dev')
 					? await EnigmaContentController.readDevelopment(Number(req.body.enigma_id))
 					: await EnigmaContentController.readProduction(Number(req.body.enigma_id), Number(req.body.series_id), req.user.id),
-				info: (devOrProd === 'prod')
-					? await EnigmaController.findOneInfo(Number(req.body.enigma_id))
-					: undefined,
+				info: (devOrProd === 'dev')
+					? undefined
+					: await EnigmaController.findOneInfo(Number(req.body.enigma_id)),
 				solution: await getSolution(),
-				objectSolutionKeys: (devOrProd === 'prod')
-					? (await EnigmaSolutionController.getListOfKeys(Number(req.body.enigma_id)))
-					: undefined
+				objectSolutionKeys: (devOrProd === 'dev')
+					? undefined
+					: (await EnigmaSolutionController.getListOfKeys(Number(req.body.enigma_id)))
 			}
 		}).res;
 	}
