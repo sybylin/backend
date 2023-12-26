@@ -90,16 +90,15 @@ export default class controller {
 		});
 	}
 	
-	static async updateOrder(newOrder: { series_id: number, enigma_id: number }[]): Promise<boolean | null> {
+	static async updateOrder(series_id: number, newOrder: number[]): Promise<boolean | null> {
 		if (!newOrder || !newOrder.length)
 			return null;
-		
 		for (const [index, data] of newOrder.entries()) {
 			await seriesEnigmaOrder.update({
 				where: {
 					series_id_enigma_id: {
-						series_id: data.series_id,
-						enigma_id: data.enigma_id
+						series_id: series_id,
+						enigma_id: data
 					}
 				},
 				data: {

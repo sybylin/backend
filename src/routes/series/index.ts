@@ -10,6 +10,7 @@ import ltrim from 'validator/lib/ltrim';
 import rtrim from 'validator/lib/rtrim';
 import { error, success } from 'code/format';
 import { seriesLogo } from '@/lib/upload';
+import { seriesIsPublished } from '@/lib/series';
 import UserSeriesRating from 'database/userSeriesRating/controller';
 import SeriesController from 'database/series/controller';
 import SeriesVerifiedByController from 'database/seriesVerifiedBy/controller';
@@ -138,12 +139,14 @@ class series extends serieCRUD {
 			return error(req, res, 'RE_001').res;
 		if (!req.body.series_id || typeof req.body.series_id !== 'number')
 			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
-		if (!await SeriesController.userRight(Number(req.body.series_id), req.user.id))
-			return error(req, res, 'SE_003').res;
+		/*
+			if (!await SeriesController.userRight(Number(req.body.series_id), req.user.id))
+				return error(req, res, 'SE_003').res;
+		*/
 		return success(req, res, 'SE_101', {
 			data: {
 				series: (!rating)
-					? await SeriesController.findOne(Number(req.body.series_id), req.user.id)
+					? await SeriesController.findOne(Number(req.body.series_id), req.user?.id ?? -1)
 					: undefined,
 				rating: (rating)
 					? await SeriesController.rating(Number(req.body.series_id))
@@ -229,7 +232,10 @@ class series extends serieCRUD {
 			return error(req, res, 'SE_003').res;
 		return success(req, res, 'SE_102', {
 			data: {
-				isUpdated: await SeriesEnigmaOrderController.updateOrder(req.body.order)
+				isUpdated: await SeriesEnigmaOrderController.updateOrder(
+					req.body.series_id,
+					req.body.order
+				)
 			}
 		}).res;
 	}
@@ -309,14 +315,14 @@ export default Router()
 	.post('/create', jwtMiddleware.acceptUser, asyncHandler(series.create))
 	.post('/published', asyncHandler(series.getPublishedSeries))
 	.post('/isCreatedByUser', jwtMiddleware.acceptUser, asyncHandler(series.userRight))
-	.post('/one', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => series.findOne(req, res, next, false)))
+	.post('/one', jwtMiddleware.includeUserIfPass, asyncHandler((req, res, next) => series.findOne(req, res, next, false)))
 
 	.post('/one/rating/user', jwtMiddleware.acceptUser, asyncHandler(series.findUserRating))
 	.post('/one/rating', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => series.findOne(req, res, next, true)))
 	.put('/one/rating', jwtMiddleware.acceptUser, asyncHandler(series.putUserRating))
 
-	.post('/update/image', jwtMiddleware.acceptUser, seriesLogo.middleware.single('image'), asyncHandler(seriesLogo.check))
-	.post('/update/:path', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => {
+	.post('/update/image', seriesIsPublished, jwtMiddleware.acceptUser, seriesLogo.middleware.single('image'), asyncHandler(seriesLogo.check))
+	.post('/update/:path', seriesIsPublished, jwtMiddleware.acceptUser, asyncHandler((req, res, next) => {
 		if (!['title', 'description', 'order'].includes(req.params.path))
 			return;
 		if (req.params.path.localeCompare('order') === 0)

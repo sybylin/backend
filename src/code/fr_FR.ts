@@ -37,6 +37,7 @@ const list: {
 		SE_001: 'Une série existe déjà sous ce nom',
 		SE_002: 'La création d\'une série a échoué, contacter l\'administrateur',
 		SE_003: 'L\'utilisateur n\'a pas les droits nécessaires pour éditer cette série',
+		SE_004: 'La série est en vérification ou publiée, les modifications sont interdit',
 
 		SE_101: 'La série a été créée',
 		SE_102: 'La série a été mise à jour',

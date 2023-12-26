@@ -64,12 +64,14 @@ export const forceLogout = (req: Request, res: Response): Response<any, Record<s
 		.send({ logout: true });
 };
 
-const verifyJwt = async (req: Request, res: Response):
+const verifyJwt = async (req: Request, res: Response, notGenError: boolean = false):
 	Promise<{ error: true; logout?: true; res: Response<any, Record<string, any>> } | null> => {
 	const xsrfTokenReq = req.headers['x-xsrf-token'] as string;
 	const authHeader = req.cookies[JWT_COOKIE_NAME];
 	const userIsPresent = !!req.user;
-	const genError = () => error(req, res, 'JW_001', { status: 401 });
+	const genError = () => !notGenError
+		? error(req, res, 'JW_001', { status: 401 })
+		: null;
 
 	return new Promise((resolve) => {
 		if (!xsrfTokenReq || !authHeader)
@@ -93,6 +95,19 @@ const verifyJwt = async (req: Request, res: Response):
 };
 
 export class jwtMiddleware {
+	/**
+	 * Include user to request if pass
+	 */
+	static includeUserIfPass(req: Request, res: Response, next: NextFunction): void {
+		verifyJwt(req, res, true)
+			.then(() => {
+				return next();
+			})
+			.catch(() => {
+				return next();
+			});
+	}
+
 	/**
 	 * Only users with the USER, MODERATOR or ADMINISTRATOR role will be accepted.
 	 */

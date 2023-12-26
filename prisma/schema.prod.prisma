@@ -73,7 +73,7 @@ model Series {
 	series_creator			SeriesCreator[]
 	series_enigma_order	SeriesEnigmaOrder[]
 	series_finished			SeriesFinished[]
-	series_verified_by	SeriesVerifiedBy?
+	series_verified_by	SeriesVerifiedBy[]
 	series_started			SeriesStarted[]
 	
 	user_series_rating	UserSeriesRating[]
@@ -100,7 +100,7 @@ model User {
 
 	series_creator			SeriesCreator[]
 	series_finished			SeriesFinished[]
-	series_verified_by	SeriesVerifiedBy?
+	series_verified_by	SeriesVerifiedBy[]
 	series_started			SeriesStarted[]
 
 	user_achievement		UserAchievement[]
@@ -202,11 +202,12 @@ model SeriesFinished {
 }
 
 model SeriesVerifiedBy {
-	series_id						Int									@unique
-	user_id							Int									@unique
+	series_id						Int
+	user_id							Int
 	verified						Boolean							@default(false)
 	rejection_reason		String?
 	verified_date				DateTime?						@updatedAt
+	@@unique([series_id, user_id])
 	//// relations
 	series							Series							@relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)

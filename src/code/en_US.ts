@@ -38,6 +38,7 @@ const list: {
 		SE_001: 'A serie already exists with this name',
 		SE_002: 'Serie creation failed, contact administrator',
 		SE_003: 'User does not have the necessary rights to edit this serie',
+		SE_004: 'Serie is pending or published, edition is forbidden',
 
 		SE_101: 'Serie has been created',
 		SE_102: 'Serie has been updated',

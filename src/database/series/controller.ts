@@ -1,23 +1,35 @@
 import prisma, { series, enigma, userSeriesRating } from 'database/db.instance';
 import { Series, SeriesStatus } from '@prisma/client';
 
-interface seriesOne {
+interface seriesOneEnigma {
 	id: number;
 	image: string | null;
-	modification_date: Date | null;
 	title: string;
 	description: string;
-	series_enigma_order: {
-		enigma: {
-			id: number;
-			image: string | null;
-			title: string;
-			description: string;
-			enigma_finished: {
-				completion_date: Date | null;
-			}[];
-		};
+	finished: 'START' | 'RESUME' | 'UNAUTHORIZED';
+	enigma_finished: {
+		completion_date: Date | null;
 	}[];
+}
+
+interface seriesOne {
+	id: number;
+	title: string;
+	description: string;
+	image: string | null;
+	rating: number;
+	published: SeriesStatus;
+	creation_date: Date | null;
+	series_enigma_order: seriesOneEnigma[];
+	series_creator: {
+		id: number;
+		name: string
+		avatar: string | null;
+  }[];
+	series_verified_by?: {
+		verified: boolean;
+    rejection_reason: string | null;
+  }[];
 }
 
 interface getSeries {
@@ -46,8 +58,8 @@ export default class controller {
 		});
 	}
 		
-	static async findOne(series_id: number, user_id: number): Promise<seriesOne | false | null> {
-		const __series = await series.findUnique({
+	static async findOne(series_id: number, user_id: number): Promise<seriesOne | false | { notExist: true }> {
+		const _series_ = await series.findUnique({
 			where: {
 				id: series_id,
 			},
@@ -57,12 +69,12 @@ export default class controller {
 				description: true,
 				image: true,
 				published: true,
-				modification_date: true,
+				creation_date: true,
 				series_creator: {
 					select: {
-						user_id: true,
 						user: {
 							select: {
+								id: true,
 								name: true,
 								avatar: true
 							}
@@ -92,21 +104,76 @@ export default class controller {
 						{ order: 'asc' }
 					]
 				},
-				series_verified_by: {
-					select: {
-						rejection_reason: true
+				series_finished: (user_id === -1)
+					? undefined
+					: {
+						where: {
+							series_id,
+							user_id
+						},
+						select: {
+							completion_date: true
+						}
+					},
+				series_verified_by: (user_id === -1)
+					? undefined
+					: {
+						where: {
+							series_id,
+							user_id
+						},
+						select: {
+							user_id: true,
+							verified: true,
+							rejection_reason: true
+						}
 					}
-				}
 			}
 		});
-		if (!__series)
-			return null;
-		let isCreator = false;
-		if (__series.series_creator.findIndex((s) => s.user_id === user_id) !== -1)
-			isCreator = true;
-		(__series as Record<string, any>).series_creator = __series.series_creator[0].user;
-		return (isCreator || __series.published)
-			? __series
+		const _rating_ = await userSeriesRating.aggregate({
+			where: {
+				series_id
+			},
+			_avg: {
+				rating: true
+			}
+		});
+
+		if (!_series_)
+			return { notExist: true };
+		const isCreator = _series_.series_creator.findIndex((s) => s.user.id === user_id) !== -1;
+		const isVerifiedByUser = _series_.series_verified_by?.findIndex((s) => s.user_id === user_id) !== -1 ?? false;
+
+		return (isCreator || isVerifiedByUser && _series_.published !== 'UNPUBLISHED' || _series_.published === 'PUBLISHED')
+			? {
+				id: _series_.id,
+				title: _series_.title,
+				description: _series_.description,
+				image: _series_.image,
+				rating: _rating_._avg.rating ?? 0,
+				published: _series_.published,
+				creation_date: _series_.creation_date,
+				series_enigma_order: _series_.series_enigma_order.map((e, i) => {
+					if (user_id !== -1 && i <= 0) {
+						(e.enigma as seriesOneEnigma).finished = (e.enigma.enigma_finished.length <= 0)
+							? 'START'
+							: 'RESUME';
+					} else if (user_id !== -1 && _series_.series_enigma_order[i - 1].enigma.enigma_finished.length > 0) {
+						(e.enigma as seriesOneEnigma).finished = (e.enigma.enigma_finished.length <= 0)
+							? 'START'
+							: 'RESUME';
+					} else
+						(e.enigma as seriesOneEnigma).finished = 'UNAUTHORIZED';
+					return e.enigma as seriesOneEnigma;
+				}),
+				series_creator: _series_.series_creator.map((e) => e.user),
+				series_finished: (_series_.series_finished)
+					? _series_.series_finished.map((e) => e.completion_date)
+					: undefined,
+				series_verified_by: (isCreator)
+					? _series_.series_verified_by.map((e) => ({ verified: e.verified, rejection_reason: e.rejection_reason })) ?? undefined
+					: undefined
+			} as seriesOne
 			: false;
 	}
 
@@ -209,6 +276,21 @@ export default class controller {
 				id: true
 			}
 		})) !== null);
+	}
+
+	static async published(series_id: number): Promise<boolean> {
+		const _series_ = await series.findUnique({
+			where: {
+				id: series_id
+			},
+			select: {
+				published: true
+			}
+		});
+
+		if (!_series_)
+			return false;
+		return (_series_.published === 'PENDING' || _series_.published === 'PUBLISHED');
 	}
 
 	static async findCreatedByUser(user_id: number): Promise<Series[]> {
@@ -337,6 +419,9 @@ export default class controller {
 					select: {
 						user_id: true,
 						verified: true
+					},
+					where: {
+						user_id
 					}
 				}
 			}
@@ -345,8 +430,8 @@ export default class controller {
 			return false;
 		return (
 			(_series_.series_creator.length && _series_.series_creator.findIndex((e) => e.user_id === user_id) !== -1) ||
-			(_series_.published === 'PUBLISHED' && _series_.series_verified_by?.verified) ||
-			(_series_.published === 'PENDING' && _series_.series_verified_by?.user_id === user_id)
+			(_series_.published === 'PENDING' && _series_.series_verified_by.findIndex((e) => e.user_id === user_id) !== -1) ||
+			(_series_.published === 'PUBLISHED' && _series_.series_verified_by.findIndex((e) => e.verified) !== -1)
 		);
 	}
 }

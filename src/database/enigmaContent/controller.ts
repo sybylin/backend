@@ -35,7 +35,12 @@ export default class controller {
 		return enigma?.development ?? null;
 	}
 
-	static async readProduction(enigma_id: number, series_id: number, user_id: number): Promise<string | false | null> {
+	static async readProduction(
+		enigma_id: number,
+		series_id: number,
+		user_id: number,
+		is_modo: boolean
+	): Promise<string | false | null | { notExist?: true, empty?: true }> {
 		const enigmasSeries = await series.findUnique({
 			where: {
 				id: series_id
@@ -72,20 +77,18 @@ export default class controller {
 				}
 			}
 		});
+
 		const enigmaIndex = enigmasSeries?.series_enigma_order.findIndex((e) => e.enigma.id === enigma_id);
 		if (!enigmasSeries || enigmaIndex === undefined || enigmaIndex <= -1)
-			return null;
-
-		if (enigmaIndex === 0)
+			return { notExist: true };
+		if (!is_modo && enigmaIndex === 0)
 			await SeriesStartedController.create({ series_id, user_id });
 		if (
-			enigmaIndex !== -1 &&
-			(
-				enigmasSeries.series_enigma_order[enigmaIndex].order === 1 ||
-				enigmasSeries.series_enigma_order[enigmaIndex - 1].enigma.enigma_finished.length > 0
-			)
+			is_modo ||
+			enigmasSeries.series_enigma_order[enigmaIndex].order === 1 ||
+			enigmasSeries.series_enigma_order[enigmaIndex - 1].enigma.enigma_finished.length > 0
 		)
-			return enigmasSeries.series_enigma_order[enigmaIndex].enigma.enigma_content?.production ?? '';
+			return enigmasSeries.series_enigma_order[enigmaIndex].enigma.enigma_content?.production ?? { empty: true };
 		return false;
 	}
 
