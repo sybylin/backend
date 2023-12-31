@@ -1,5 +1,8 @@
+import DOMPurify from 'dompurify';
+import { JSDOM } from 'jsdom';
 import { enigmaContent, series } from 'database/db.instance';
 import { EnigmaContent } from '@prisma/client';
+import { brotliCompress } from '@/lib/brotli';
 import SeriesStartedController from 'database/seriesStarted/controller';
 
 export default class controller {
@@ -97,6 +100,14 @@ export default class controller {
 	}
 
 	static async updatePart(id: number, data: string, devOrProd: 'dev' | 'prod'): Promise<EnigmaContent | null> {
+		const cleanAndCompress = async () => {
+			if (devOrProd === 'prod')
+				return await brotliCompress(data);
+			else
+				return await brotliCompress(DOMPurify(new JSDOM('').window).sanitize(data));
+		};
+		const clean = await cleanAndCompress() ?? '';
+
 		return enigmaContent.upsert({
 			where: {
 				enigma_id: id
@@ -104,18 +115,18 @@ export default class controller {
 			create: {
 				enigma_id: id,
 				development: (devOrProd === 'dev')
-					? data
+					? clean
 					: '',
 				production: (devOrProd === 'prod')
-					? data
+					? clean
 					: ''
 			},
 			update: {
 				development: (devOrProd === 'dev')
-					? data
+					? clean
 					: undefined,
 				production: (devOrProd === 'prod')
-					? data
+					? clean
 					: undefined
 			}
 		});
