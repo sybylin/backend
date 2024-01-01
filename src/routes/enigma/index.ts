@@ -288,7 +288,7 @@ class enigma extends enigmaCRUD {
 				req.user.id,
 				isModo
 			);
-		const authorized = getEnigma !== false && !Object.prototype.hasOwnProperty.call(getEnigma, 'notExist');
+		const authorized = getEnigma !== null && getEnigma !== false && !Object.prototype.hasOwnProperty.call(getEnigma, 'notExist');
 
 		return success(req, res, 'SE_102', {
 			data: {
