@@ -25,6 +25,9 @@ export class Mail {
 	private passwordUpdateMail: string;
 	private verifyMail: string;
 	private nodeMailer: nodemailer.Transporter<SMTPTransport.SentMessageInfo>;
+	private icon = (process.env.NODE_ENV === 'production')
+		? 'https://sybyl.in/icons/favicon-128x128.png'
+		: 'http://localhost:9100/icons/favicon-128x128.png';
 	public defaultMail: string;
 
 	constructor(defaultMail?: string) {
@@ -48,7 +51,7 @@ export class Mail {
 					port: 7895
 				}
 		);
-		this.defaultMail = defaultMail ?? 'Sibyllin <hello@sibyllin.app';
+		this.defaultMail = defaultMail ?? 'Sybylin <hello@sybyl.in';
 
 		readFile(resolve('.', 'mail', 'dist', 'confirm.html'), { encoding: 'utf-8' })
 			.then((d) => this.confirmMail = d);
@@ -87,7 +90,7 @@ export class Mail {
 				from: mailInfo.from ?? this.defaultMail,
 				to: mailInfo.to,
 				subject: mailInfo.subject,
-				html: this.formatString(mailData, args ?? {})
+				html: this.formatString(mailData, Object.assign({ icon: this.icon }, args) ?? { icon: this.icon })
 			}, (err, info) => {
 				if (err)
 					return rej(new MailError(err.message));
@@ -103,33 +106,33 @@ export class Mail {
 
 	connectionCode(to: string, args: Record<'token', string>): MailReturn {
 		return this.send(this.confirmMail, {
-			from: 'Sibyllin <verify@sibyllin.app>',
+			from: 'Sybylin <verify@sybyl.in>',
 			to,
-			subject: 'Sibyllin connection code'
+			subject: 'Sybylin connection code'
 		}, args);
 	}
 
 	resetPassword(to: string, args: Record<'url', string>): MailReturn {
 		return this.send(this.passwordMail, {
-			from: 'Sibyllin <verify@sibyllin.app>',
+			from: 'Sybylin <verify@sybyl.in>',
 			to,
-			subject: 'Sibyllin password reset'
+			subject: 'Sybylin password reset'
 		}, args);
 	}
 
 	passwordUpdate(to: string): MailReturn {
 		return this.send(this.passwordUpdateMail, {
-			from: 'Sibyllin <verify@sibyllin.app>',
+			from: 'Sybylin <verify@sybyl.in>',
 			to,
-			subject: 'Sibyllin password update'
+			subject: 'Sybylin password update'
 		});
 	}
 
 	accountVerification(to: string, args: Record<'token', string>): MailReturn {
 		return this.send(this.verifyMail, {
-			from: 'Sibyllin <verify@sibyllin.app>',
+			from: 'Sybylin <verify@sybyl.in>',
 			to,
-			subject: 'Sibyllin account verification'
+			subject: 'Sybylin account verification'
 		}, args);
 	}
 }

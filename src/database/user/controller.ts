@@ -1,6 +1,6 @@
-import * as argon2 from 'argon2';
 import prisma, { user, enigmaFinished, seriesFinished, userAchievement } from 'database/db.instance';
-import checkDate from 'src/database/userBlocked/checkDate';
+import checkDate from 'database/userBlocked/checkDate';
+import { hash, verify } from 'lib/password';
 import { User, Role } from '@prisma/client';
 
 export interface CleanUser {
@@ -78,21 +78,35 @@ export default class controller {
 	static async create(data: Omit<User, 'id' | 'avatar' | 'creation_date' | 'modification_date'>): Promise<{ name: string, email: string } | null> {
 		if (!data.name || !data.email || !data.password)
 			return null;
-		return await user.create({
-			data: {
-				name: data.name,
-				email: data.email,
-				avatar: null,
-				password: await argon2.hash(data.password),
-				verify: data.verify,
-				token: data.token,
-				token_deadline: data.token_deadline
-			},
-			select: {
-				name: true,
-				email: true
-			}
-		});
+		try {
+			const userCreate = await user.create({
+				data: {
+					name: data.name,
+					email: data.email,
+					avatar: null,
+					password: '',
+					verify: data.verify,
+					token: data.token,
+					token_deadline: data.token_deadline
+				},
+				select: {
+					id: true,
+					name: true,
+					email: true
+				}
+			});
+			await controller.updatePassword(userCreate.id, data.password);
+
+			console.log(
+				'one',
+				await controller.check(userCreate.id, data.password)
+			);
+
+			return { name: userCreate.name, email: userCreate.email };
+		} catch (e) {
+			console.error(e);
+		}
+		return null;
 	}
 
 	static findOne(nameOrId: string | number): Promise<User | null> {
@@ -188,7 +202,7 @@ export default class controller {
 				.then((d) => {
 					if (!d)
 						return res({ data: null, info: enumCheckUser.NOT_FOUND });
-					argon2.verify(d.password, password)
+					verify(d.password, password)
 						.then(async (val) => {
 							if (val) {
 								await user.update({
@@ -207,7 +221,10 @@ export default class controller {
 								? enumCheckUser.OK
 								: enumCheckUser.INCORRECT_PASSWORD });
 						})
-						.catch((e) => res({ data: e, info: enumCheckUser.ERROR }));
+						.catch((e) => {
+							console.log(e);
+							res({ data: e, info: enumCheckUser.ERROR });
+						});
 				})
 				.catch((e) => res({ data: e, info: enumCheckUser.ERROR }));
 		});
@@ -232,7 +249,7 @@ export default class controller {
 				: {
 					name: data.name,
 					email: data.email,
-					password: await argon2.hash(data.password),
+					password: await hash(data.password),
 					verify: data.verify,
 					token: data.token,
 					token_deadline: data.token_deadline
@@ -249,7 +266,7 @@ export default class controller {
 				id: user_id
 			},
 			data: {
-				password: await argon2.hash(new_password)
+				password: await hash(new_password)
 			},
 			select: {
 				id: true

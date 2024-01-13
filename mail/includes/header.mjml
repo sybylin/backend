@@ -1,7 +1,7 @@
 <mj-section>
 	<mj-column vertical-align="middle">
-		<mj-image src="https://placehold.co/100x100" width="150px" alt="Sibyllin icon"></mj-image>
-		<mj-text align="center" font-size="50px" padding-top="0px">Sibyllin</mj-text>
+		<mj-image src="{{icon}}" width="128px" alt="Sybylin icon"></mj-image>
+		<mj-text align="center" font-size="50px" padding-top="0px">Sybylin</mj-text>
 		<mj-divider border-width="1px" border-style="solid" border-color="lightgrey" />
 	</mj-column>
 </mj-section>

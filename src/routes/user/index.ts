@@ -251,7 +251,7 @@ class account extends accountCRUD {
 			user.verify = false;
 			user.token = token.token;
 			user.token_deadline = token.deadline;
-			await UserController.update(user);
+			await UserController.update(user, true);
 
 			await mailSystem.accountVerification(user.email, { token: String(user.token) });
 			return success(req, res, 'US_102', { data: { mailSend: true } }).res;
@@ -276,7 +276,7 @@ class account extends accountCRUD {
 			if (user.token !== Number(req.body.token))
 				return error(req, res, 'US_010').res;
 			user.verify = true;
-			await UserController.update(user);
+			await UserController.update(user, true);
 			return success(req, res, 'US_103').res;
 		}
 	}

@@ -17,7 +17,6 @@
   },
   "dependencies": {
     "@prisma/client": "^5.6.0",
-    "argon2": "^0.31.0",
     "brotli-wasm": "^2.0.1",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.6",

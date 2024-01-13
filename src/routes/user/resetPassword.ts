@@ -54,7 +54,7 @@ export const initPasswordReset = async (req: InitPasswordRequest, res: Response<
 			return error(req, res, 'US_020').res;
 		mail.resetPassword(user.email, {
 			url: (process.env.NODE_ENV === 'production')
-				? `https://sibyllin.app/user/reset/${token}`
+				? `https://sybyl.in/user/reset/${token}`
 				: `http://localhost:9100/user/reset/${token}`
 		})
 			.catch(() => next(new Error(getInfo('GE_002').message)));
