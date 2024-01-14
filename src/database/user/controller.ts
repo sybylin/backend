@@ -1,6 +1,7 @@
 import prisma, { user, enigmaFinished, seriesFinished, userAchievement } from 'database/db.instance';
 import checkDate from 'database/userBlocked/checkDate';
 import { hash, verify } from 'lib/password';
+import { log } from 'lib/log';
 import { User, Role } from '@prisma/client';
 
 export interface CleanUser {
@@ -84,27 +85,19 @@ export default class controller {
 					name: data.name,
 					email: data.email,
 					avatar: null,
-					password: '',
+					password: await hash(data.password),
 					verify: data.verify,
 					token: data.token,
 					token_deadline: data.token_deadline
 				},
 				select: {
-					id: true,
 					name: true,
 					email: true
 				}
 			});
-			await controller.updatePassword(userCreate.id, data.password);
-
-			console.log(
-				'one',
-				await controller.check(userCreate.id, data.password)
-			);
-
-			return { name: userCreate.name, email: userCreate.email };
+			return userCreate;
 		} catch (e) {
-			console.error(e);
+			log.error(e);
 		}
 		return null;
 	}
@@ -222,7 +215,6 @@ export default class controller {
 								: enumCheckUser.INCORRECT_PASSWORD });
 						})
 						.catch((e) => {
-							console.log(e);
 							res({ data: e, info: enumCheckUser.ERROR });
 						});
 				})
