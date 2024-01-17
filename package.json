@@ -7,16 +7,19 @@
     "dev:serve": "SET NODE_ENV=development&& nodemon --delay 2000ms dist/index.cjs.js",
     "build": "yarn prisma:prod:schema && yarn mjmlBuild && rollup --bundleConfigAsCjs --config rollup.config.js",
     "serve": "SET NODE_ENV=production&& node dist/index.cjs.js",
+
     "mjml:build": "mjml ./mail/*.mjml -o ./mail/dist/ --config.minify true",
     "mjml:lint": "mjml ./mail/*.mjml --config.validationLevel strict",
-    "prisma:prod": "prisma migrate deploy && yarn serve",
-    "prisma:prod:schema": "prisma generate --schema ./prisma/schema.prod.prisma",
-    "prisma:dev": "prisma db push --schema ./prisma/schema.dev.prisma",
-    "prisma:dev:schema": "prisma generate --schema ./prisma/schema.dev.prisma",
-    "prisma:kysely:schema": "prisma generate --schema ./prisma/schema.kysely.prisma"
+
+    "prisma:prod": "prisma migrate deploy",
+    "prisma:prod:schema": "prisma generate --schema ./prisma/schema.prisma",
+
+    "prisma:dev": "SET DATABASE_URL=postgresql://postgres:root@localhost:5432/sibyllin&& prisma db push --schema ./prisma/schema.prisma",
+    "prisma:dev:schema": "SET DATABASE_URL=postgresql://postgres:root@localhost:5432/sibyllin&& prisma generate --schema ./prisma/schema.prisma",
+    "prisma:kysely:schema": "SET DATABASE_URL=postgresql://postgres:root@localhost:5432/sibyllin&& prisma generate --schema ./prisma/schema.kysely.prisma"
   },
   "dependencies": {
-    "@prisma/client": "^5.6.0",
+    "@prisma/client": "^5.8.1",
     "brotli-wasm": "^2.0.1",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.6",
@@ -60,7 +63,7 @@
     "eslint": "^8.48.0",
     "mjml": "^4.14.1",
     "nodemon": "^3.0.1",
-    "prisma": "^5.6.0",
+    "prisma": "^5.8.1",
     "rollup": "^3.28.1",
     "rollup-plugin-typescript-paths": "^1.4.0",
     "tslib": "^2.6.2",

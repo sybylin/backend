@@ -1,15 +1,12 @@
 generator client {
-	provider				= "prisma-kysely"
-	output					= "./../src/kysely"
-	fileName				= "types.ts"
-	enumFileName		= "enums.ts"
-	previewFeatures	= ["postgresqlExtensions"]
+  provider 				= "prisma-client-js"
+	previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider		= "postgresql"
   url					= env("DATABASE_URL")
-	extensions	= [tsm_system_time, tsm_system_rows, pg_trgm]
+	extensions 	= [tsm_system_time, tsm_system_rows, pg_trgm]
 }
 
 // #region Enum
