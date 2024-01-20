@@ -55,6 +55,7 @@ const list: {
 		US_009: 'Le jeton a expiré, veuillez répéter le processus',
 		US_010: 'Le jeton n\'est pas valide',
 		US_011: 'La limite de jeton n\'existe pas',
+		US_012: 'Le mot de passe est malformé',
 		US_020: 'L\'initialisation de la réinitialisation du mot de passe a échoué',
 		US_021: 'Les mots de passe sont différents',
 		US_022: 'Le lien de réinitialisation n\'existe pas ou n\'est plus valide',

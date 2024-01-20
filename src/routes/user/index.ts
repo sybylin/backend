@@ -34,12 +34,12 @@ class accountCRUD {
 		const hasError = verifyRequest(req, res, true, true);
 		if (hasError)
 			return hasError.res;
-		if (checkProfanity(req.body.name) !== null)
+		if (checkProfanity(req.body.name, false) !== null)
 			return error(req, res, 'US_031', { data: { key: 'name' } });
 		if (!isLength(req.body.name, { min: 4, max: 255 }))
 			return error(req, res, 'RE_002', { data: { key: 'name' } });
 		if (passwordIsMalformed(req.body.password))
-			return error(req, res, 'RE_002', { data: { key: 'password' } });
+			return error(req, res, 'US_012', { data: { key: 'password' } });
 		const mail = normalizeEmail(req.body.email);
 		if (mail === false)
 			return error(req, res, 'US_004').res;
@@ -109,7 +109,7 @@ class accountCRUD {
 		)
 			return error(req, res, 'RE_002', { data: { key: 'name' } }).res;
 			
-		if (checkProfanity(req.body.name) !== null)
+		if (checkProfanity(req.body.name, false) !== null)
 			return error(req, res, 'US_031', { data: { key: 'name' } });
 		if (!req.body.email || !isString(req.body.email) || isEmpty(req.body.email))
 			return error(req, res, 'RE_002', { data: { key: 'email' } }).res;
@@ -130,7 +130,7 @@ class accountCRUD {
 			if (!req.body.newPassword || !isString(req.body.newPassword) || isEmpty(req.body.newPassword))
 				return error(req, res, 'RE_002', { data: { key: 'newPassword' } });
 			if (passwordIsMalformed(req.body.newPassword))
-				return error(req, res, 'RE_002', { data: { key: 'newPassword' } });
+				return error(req, res, 'US_012', { data: { key: 'newPassword' } });
 			if ((await UserController.check(req.user.id, req.body.oldPassword)).info === enumCheckUser.INCORRECT_PASSWORD)
 				return error(req, res, 'US_002').res;
 		}

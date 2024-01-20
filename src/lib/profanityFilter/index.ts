@@ -14,12 +14,13 @@ export interface info {
 	occurence: string
 }
 
-export default (searchString: string): info | null => {
+export default (searchString: string, exactMatch = true): info | null => {
 	let isFind: string | null = null;
 
 	for (const lang of langList) {
-		isFind = lang.list.find((e) => e.localeCompare(searchString) === 0) ?? null;
-
+		isFind = (exactMatch)
+			? lang.list.find((e: string) => e.toLowerCase().localeCompare(searchString.toLowerCase()) === 0) ?? null
+			: lang.list.find((e: string) => e.toLowerCase().includes(searchString.toLowerCase()) === true) ?? null;
 		if (isFind !== null) {
 			return {
 				lang: lang.lang,
@@ -27,5 +28,6 @@ export default (searchString: string): info | null => {
 			};
 		}
 	}
+
 	return null;
 };

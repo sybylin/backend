@@ -57,6 +57,7 @@ const list: {
 		US_009: 'Token is expired, please repeat the process',
 		US_010: 'Token is invalid',
 		US_011: 'Token deadline not exist',
+		US_012: 'Password is malformed',
 		US_020: 'Password reset initialization failed',
 		US_021: 'Passwords aren\'t the same',
 		US_022: 'Reset link does not exist or is no longer valid',

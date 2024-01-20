@@ -1,4 +1,5 @@
 import { randomBytes } from 'crypto';
+import { isString } from 'lodash';
 import isEmpty from 'validator/lib/isEmpty';
 import isEmail from 'validator/lib/isEmail';
 import normalizeEmail from 'validator/lib/normalizeEmail';
@@ -7,9 +8,9 @@ import mail from '@/lib/mail';
 import { error, success } from 'code/format';
 import UserController from 'database/user/controller';
 import UserResetPassword from 'database/userResetPassword/controller';
+import { passwordIsMalformed } from './utility';
 
 import type { NextFunction, Request, Response } from 'express';
-import { isString } from 'lodash';
 
 interface InitPasswordRequest extends Request {
 	body: {
@@ -38,8 +39,14 @@ export const initPasswordReset = async (req: InitPasswordRequest, res: Response<
 		if (!norm)
 			return error(req, res, 'US_005').res;
 		const user = await UserController.findByEmail(norm);
-		if (!user)
-			return error(req, res, 'US_001').res;
+		if (!user) {
+			// fake for protect email analysis
+			return success(req, res, 'US_120', {
+				data: {
+					initPasswordReset: true
+				}
+			}).res;
+		}
 		if (user.email.localeCompare(norm) !== 0)
 			return error(req, res, 'US_005').res;
 		const token = randomBytes(128).toString('base64url');
@@ -77,6 +84,8 @@ export const resetPassword = async (req: ResetPasswordRequest, res: Response<any
 		return error(req, res, 'RE_002', { data: { key: 'password' } }).res;
 	if (!req.body.repeatPassword || isEmpty(req.body.repeatPassword) || !isString(req.body.repeatPassword))
 		return error(req, res, 'RE_002', { data: { key: 'repeatPassword' } }).res;
+	if (passwordIsMalformed(req.body.password))
+		return error(req, res, 'US_012', { data: { key: 'password' } }).res;
 	
 	let userResetToken = await UserResetPassword.findByToken(req.body.token);
 	const currentDate = new Date().getTime();
