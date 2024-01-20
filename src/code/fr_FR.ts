@@ -58,6 +58,8 @@ const list: {
 		US_020: 'L\'initialisation de la réinitialisation du mot de passe a échoué',
 		US_021: 'Les mots de passe sont différents',
 		US_022: 'Le lien de réinitialisation n\'existe pas ou n\'est plus valide',
+		US_030: 'Vous ne pouvez pas changer votre propre rôle',
+		US_031: 'Ce nom d\'utilisateur ne peut pas être utilisé',
 
 		US_101: 'L\'utilisateur a été authentifié avec succès',
 		US_102: 'La vérification est en attente d\'une réponse',

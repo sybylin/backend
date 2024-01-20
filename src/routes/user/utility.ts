@@ -3,7 +3,6 @@ import isEmail from 'validator/lib/isEmail';
 import isEmpty from 'validator/lib/isEmpty';
 import { isString } from 'lodash';
 import { error, returnFormat } from 'code/format';
-
 import type { Response } from 'express';
 import type { UserRequest } from './interface';
 
@@ -29,6 +28,14 @@ export const verifyRequest = (
 	}
 	return null;
 };
+
+export const passwordIsMalformed = (password: string): boolean => (
+	(password.length < 8 || password.length > 255) ||
+		!/[a-z]/.test(password) ||
+		!/[A-Z]/.test(password) ||
+		!/[0-9]/.test(password) ||
+		!/[!"#$%&'()*+,-./:;<=>?@[\\\\\\\]^_` {|}~]/.test(password)
+);
 
 export const generateToken = (): { token: number; deadline: Date; } => {
 	const date = new Date();

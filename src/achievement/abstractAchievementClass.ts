@@ -17,7 +17,7 @@ export default abstract class Achievement {
 			name: this.name,
 			description: this.description,
 			points: this.points
-		}, 0)
+		}, 1)
 			.then((d) => {
 				if (d)
 					this.id = d.id;

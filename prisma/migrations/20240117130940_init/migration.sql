@@ -320,3 +320,17 @@ ALTER TABLE "UserSeriesRating" ADD CONSTRAINT "UserSeriesRating_user_id_fkey" FO
 
 -- AddForeignKey
 ALTER TABLE "UserSeriesRating" ADD CONSTRAINT "UserSeriesRating_series_id_fkey" FOREIGN KEY ("series_id") REFERENCES "Series"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- Create first admin user
+INSERT INTO "User" (name, email, password, avatar, role, verify, last_connection, creation_date, modification_date)
+VALUES (
+  'Nyphel',
+  'nyphel@sybyl.in',
+  'd1b07850f12048849c283a5ced0fcc5f4b73c4588c33744b0367a210cb7a439d2de158361a84105e5f82654aacca22f4c2f82075155410d6d0377b1a9f845cce.44757948c10119084cb91f915f0f70a3',
+  null,
+  'ADMINISTRATOR',
+  true,
+  null,
+  '2024-01-17 13:59:54.381',
+  '2024-01-17 14:02:25.234'
+);

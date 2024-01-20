@@ -61,6 +61,7 @@ const list: {
 		US_021: 'Passwords aren\'t the same',
 		US_022: 'Reset link does not exist or is no longer valid',
 		US_030: 'You cannot change your own role',
+		US_031: 'This user name cannot be used',
 
 		US_101: 'User has been successfully authenticated',
 		US_102: 'Verification is awaiting a response',

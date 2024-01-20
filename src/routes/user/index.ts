@@ -3,6 +3,7 @@ import { Router } from 'express';
 import isEmail from 'validator/lib/isEmail';
 import isEmpty from 'validator/lib/isEmpty';
 import isNumeric from 'validator/lib/isNumeric';
+import isLength from 'validator/lib/isLength';
 import normalizeEmail from 'validator/lib/normalizeEmail';
 import escape from 'validator/lib/escape';
 import ltrim from 'validator/lib/ltrim';
@@ -21,8 +22,9 @@ import TokenController from 'database/token/controller';
 import UserController from 'database/user/controller';
 import UserBlockedController from 'database/userBlocked/controller';
 import { enumCheckUser } from 'database/user/controller';
-import { verifyRequest, generateToken } from './utility';
+import { verifyRequest, passwordIsMalformed, generateToken } from './utility';
 import { initPasswordReset, resetPassword } from './resetPassword';
+import checkProfanity from 'lib/profanityFilter';
 
 import type { Request, NextFunction, Response } from 'express';
 
@@ -32,6 +34,12 @@ class accountCRUD {
 		const hasError = verifyRequest(req, res, true, true);
 		if (hasError)
 			return hasError.res;
+		if (checkProfanity(req.body.name) !== null)
+			return error(req, res, 'US_031', { data: { key: 'name' } });
+		if (!isLength(req.body.name, { min: 4, max: 255 }))
+			return error(req, res, 'RE_002', { data: { key: 'name' } });
+		if (passwordIsMalformed(req.body.password))
+			return error(req, res, 'RE_002', { data: { key: 'password' } });
 		const mail = normalizeEmail(req.body.email);
 		if (mail === false)
 			return error(req, res, 'US_004').res;
@@ -93,8 +101,16 @@ class accountCRUD {
 	static async update(req: Request, res: Response, next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.name || !isString(req.body.name) || isEmpty(req.body.name))
+		if (
+			!req.body.name ||
+			!isString(req.body.name) ||
+			isEmpty(req.body.name) ||
+			!isLength(req.body.name, { min: 4, max: 255 })
+		)
 			return error(req, res, 'RE_002', { data: { key: 'name' } }).res;
+			
+		if (checkProfanity(req.body.name) !== null)
+			return error(req, res, 'US_031', { data: { key: 'name' } });
 		if (!req.body.email || !isString(req.body.email) || isEmpty(req.body.email))
 			return error(req, res, 'RE_002', { data: { key: 'email' } }).res;
 		if (!isEmail(req.body.email))
@@ -102,17 +118,22 @@ class accountCRUD {
 		req.body.email = normalizeEmail(req.body.email);
 		if (req.body.email === false)
 			return error(req, res, 'US_004').res;
-		if (req.body.oldPassword && req.body.newPassword) {
+
+		const mailNotChanged = req.user.email.localeCompare(req.body.email) === 0;
+		const passwordChanged = Object.prototype.hasOwnProperty.call(req.body, 'oldPassword')
+			&& isString(req.body.oldPassword)
+			&& Object.prototype.hasOwnProperty.call(req.body, 'newPassword')
+			&& isString(req.body.newPassword);
+		if (passwordChanged) {
 			if (!req.body.oldPassword || !isString(req.body.oldPassword) || isEmpty(req.body.oldPassword))
 				return error(req, res, 'RE_002', { data: { key: 'oldPassword' } });
 			if (!req.body.newPassword || !isString(req.body.newPassword) || isEmpty(req.body.newPassword))
 				return error(req, res, 'RE_002', { data: { key: 'newPassword' } });
+			if (passwordIsMalformed(req.body.newPassword))
+				return error(req, res, 'RE_002', { data: { key: 'newPassword' } });
 			if ((await UserController.check(req.user.id, req.body.oldPassword)).info === enumCheckUser.INCORRECT_PASSWORD)
 				return error(req, res, 'US_002').res;
 		}
-
-		const mailNotChanged = req.user.email.localeCompare(req.body.email) === 0;
-		const passwordChanged = !req.body.oldPassword || !req.body.oldPassword.length || !req.body.newPassword || !req.body.newPassword.length;
 		const token = generateToken();
 		const newUser = await UserController.update({
 			id: req.user.id,
@@ -125,18 +146,23 @@ class accountCRUD {
 			token_deadline: (!mailNotChanged)
 				? token.deadline
 				: null,
-			password: req.body.password as string ?? undefined
+			password: (passwordChanged)
+				? req.body.newPassword as string ?? undefined
+				: req.body.password as string ?? undefined
 		}, passwordChanged);
 		if (!mailNotChanged)
 			await mailSystem.accountVerification(req.body.email, { token: String(token.token) });
-		return success(req, res, 'US_102',
-			{
-				data: {
-					user: newUser,
-					mailSend: !!mailNotChanged
-				},
+
+		return success(req, res, (!mailNotChanged)
+			? 'US_102'
+			: 'US_105',
+		{
+			data: {
+				user: newUser,
+				mailSend: !!mailNotChanged
 			},
-			await generateJwtToken(req.user.id, newUser.name, false)
+		},
+		await generateJwtToken(req.user.id, newUser.name, false)
 		).res;
 	}
 
@@ -251,7 +277,7 @@ class account extends accountCRUD {
 			user.verify = false;
 			user.token = token.token;
 			user.token_deadline = token.deadline;
-			await UserController.update(user, true);
+			await UserController.update(user, false);
 
 			await mailSystem.accountVerification(user.email, { token: String(user.token) });
 			return success(req, res, 'US_102', { data: { mailSend: true } }).res;
@@ -276,7 +302,7 @@ class account extends accountCRUD {
 			if (user.token !== Number(req.body.token))
 				return error(req, res, 'US_010').res;
 			user.verify = true;
-			await UserController.update(user, true);
+			await UserController.update(user, false);
 			return success(req, res, 'US_103').res;
 		}
 	}

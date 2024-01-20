@@ -230,7 +230,7 @@ export default class controller {
 			where: {
 				id: data.id
 			},
-			data: (passNotChange)
+			data: (passNotChange === false)
 				? {
 					name: data.name,
 					email: data.email,
