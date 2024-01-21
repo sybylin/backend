@@ -39,11 +39,11 @@ export class Mail {
 			(process.env.NODE_ENV === 'production')
 				? {
 					host: process.env.BACKEND_MAIL_HOST,
-					port: 465,
+					port: process.env.BACKEND_MAIL_PORT,
 					secure: true,
 					auth: {
-						user: process.env.BACKEND_MAIL_USER,
-						pass: process.env.BACKEND_MAIL_PASS
+						user: process.env.BACKEND_MAIL_USERNAME,
+						pass: process.env.BACKEND_MAIL_PASSWORD
 					}
 				}
 				: {
