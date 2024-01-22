@@ -6,7 +6,7 @@
     "dev:build": "rollup --watch --bundleConfigAsCjs --config rollup.config.js",
     "dev:serve": "SET DATABASE_URL=postgresql://postgres:root@localhost:5432/sibyllin&& SET NODE_ENV=development&& nodemon --delay 2000ms dist/index.cjs.js",
     "build": "yarn prisma:prod:schema && yarn mjml:build && rollup --bundleConfigAsCjs --config rollup.config.js",
-    "serve": "node dist/index.cjs.js",
+    "serve": "yarn prisma:prod && node dist/index.cjs.js",
     "serve:win": "SET NODE_ENV=production&& node dist/index.cjs.js",
     "mjml:build": "mjml ./mail/*.mjml -o ./mail/dist/ --config.minify true",
     "mjml:lint": "mjml ./mail/*.mjml --config.validationLevel strict",
