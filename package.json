@@ -66,5 +66,10 @@
     "rollup-plugin-typescript-paths": "^1.4.0",
     "tslib": "^2.6.2",
     "typescript": "^5.2.2"
+  },
+  "engines": {
+    "node": ">= 16",
+    "npm": ">= 6.13.4",
+    "yarn": ">= 1.21.1"
   }
 }
