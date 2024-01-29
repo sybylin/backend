@@ -4,7 +4,8 @@ import isEmpty from 'validator/lib/isEmpty';
 import isEmail from 'validator/lib/isEmail';
 import normalizeEmail from 'validator/lib/normalizeEmail';
 import getInfo from '@/code';
-import mail from '@/lib/mail';
+import mail from 'lib/mail';
+import CaptchaInstance from 'lib/captcha';
 import { error, success } from 'code/format';
 import UserController from 'database/user/controller';
 import UserResetPassword from 'database/userResetPassword/controller';
@@ -15,6 +16,7 @@ import type { NextFunction, Request, Response } from 'express';
 interface InitPasswordRequest extends Request {
 	body: {
 		email: string;
+		captcha: string;
 	}
 }
 
@@ -34,6 +36,8 @@ export const initPasswordReset = async (req: InitPasswordRequest, res: Response<
 		return error(req, res, 'RE_001').res;
 	if (!req.body.email || isEmpty(req.body.email) || !isEmail(req.body.email))
 		return error(req, res, 'RE_002', { data: { key: 'email' } }).res;
+	if (await CaptchaInstance.verify(req.body.captcha) !== true)
+		return error(req, res, 'CA_001', { data: { key: 'captcha' } }).res;
 	try {
 		const norm = normalizeEmail(req.body.email);
 		if (!norm)

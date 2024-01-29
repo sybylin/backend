@@ -1,4 +1,5 @@
 import { createHash, createHmac, randomInt, randomBytes, generateKey } from 'crypto';
+import { CronJob } from 'cron';
 import { log } from './log';
 import type { KeyObject } from 'crypto';
 
@@ -27,9 +28,11 @@ class Captcha {
 	private minInt = 1e3;
 	private maxInt = 1e5;
 	private hmac: KeyObject | undefined = undefined;
+	private usedChallenge: Map<string, number> = new Map();
+	private cronJob: CronJob;
 	private genSalt = () => {
 		const expiration = new Date();
-		expiration.setTime(expiration.getTime() + 60000); // 1 minute
+		expiration.setTime(expiration.getTime() + 300000); // 5 minutes
 		return `${expiration.getTime()}.${randomBytes(12).toString('hex')}`;
 	};
 
@@ -39,6 +42,35 @@ class Captcha {
 				this.hmac = key;
 			})
 			.catch((e) => log.error(e));
+
+		this.cronJob = new CronJob('*/5 * * * *', () => {
+			const currentTimestamp = new Date().getTime();
+			for (const it of this.usedChallenge.entries()) {
+				if (it[1] < currentTimestamp)
+					this.usedChallenge.delete(it[0]);
+			}
+		});
+		this.cronJob.start();
+	}
+
+	/**
+	 * Check if captcha have already been used
+	 * @param payload string
+	 */
+	isUsedCaptcha(payload: string): boolean {
+		return this.usedChallenge.has(
+			createHash(this.convertAlgo).update(payload).digest('hex')
+		);
+	}
+
+	/**
+	 * Insert used captcha in list
+	 */
+	insertUsedCaptcha(payload: string, timestamp: number): void {
+		this.usedChallenge.set(
+			createHash(this.convertAlgo).update(payload).digest('hex'),
+			timestamp
+		);
 	}
 
 	/**
@@ -69,6 +101,9 @@ class Captcha {
 		if (!payload)
 			return null;
 		let data: captchaVerify | undefined = undefined;
+
+		if (this.isUsedCaptcha(payload))
+			return false;
 		try {
 			data = JSON.parse(
 				atob(payload)
@@ -79,7 +114,8 @@ class Captcha {
 		}
 		if (data) {
 			const payloadExpiration = /^(\d+)./gm.exec(data.salt);
-			if (!payloadExpiration || Number(payloadExpiration[1]) < new Date().getTime())
+			const currentDate = new Date().getTime();
+			if (!payloadExpiration || Number(payloadExpiration[1]) < currentDate === true)
 				return false;
 			const check = await this.create(data.salt, data.number);
 			if (
@@ -87,8 +123,10 @@ class Captcha {
 				&& data.algorithm.localeCompare(check.algorithm) === 0
 				&& data.challenge.localeCompare(check.challenge) === 0
 				&& data.signature.localeCompare(check.signature) === 0
-			)
+			) {
+				this.insertUsedCaptcha(payload, Number(payloadExpiration));
 				return true;
+			}
 		}
 		return false;
 	}
