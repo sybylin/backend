@@ -25,6 +25,10 @@ const list: {
 		JW_002: 'User linked to the jwt does not have the necessary rights',
 		JW_101: 'User linked to the jwt have the necessary rights'
 	},
+	captcha: {
+		CA_001: 'Captcha is invalid',
+		CA_101: 'Captcha is valid'
+	},
 
 	/// Modules
 	achievement: {

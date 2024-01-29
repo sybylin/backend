@@ -25,6 +25,7 @@ import { enumCheckUser } from 'database/user/controller';
 import { verifyRequest, passwordIsMalformed, generateToken } from './utility';
 import { initPasswordReset, resetPassword } from './resetPassword';
 import checkProfanity from 'lib/profanityFilter';
+import CaptchaInstance from 'lib/captcha';
 
 import type { Request, NextFunction, Response } from 'express';
 
@@ -34,6 +35,8 @@ class accountCRUD {
 		const hasError = verifyRequest(req, res, true, true);
 		if (hasError)
 			return hasError.res;
+		if (await CaptchaInstance.verify(req.body.captcha) !== true)
+			return error(req, res, 'CA_001', { data: { key: 'captcha' } });
 		if (checkProfanity(req.body.name, false) !== null)
 			return error(req, res, 'US_031', { data: { key: 'name' } });
 		if (!isLength(req.body.name, { min: 4, max: 255 }))

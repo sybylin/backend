@@ -45,7 +45,7 @@ export class Mail {
 						user: process.env.BACKEND_MAIL_USERNAME,
 						pass: process.env.BACKEND_MAIL_PASSWORD
 					}
-				}
+				} as any
 				: {
 					host: 'localhost',
 					port: 7895
