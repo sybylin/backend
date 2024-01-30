@@ -2,7 +2,7 @@
 import { jwtMiddleware } from '@/lib/jwt';
 import asyncHandler from '@/lib/asyncHandler';
 import { Router } from 'express';
-import { isString } from 'lodash';
+import { isString } from 'lib/isSomething';
 import isEmpty from 'validator/lib/isEmpty';
 import isNumeric from 'validator/lib/isNumeric';
 import escape from 'validator/lib/escape';

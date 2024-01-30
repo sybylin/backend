@@ -8,7 +8,7 @@ import normalizeEmail from 'validator/lib/normalizeEmail';
 import escape from 'validator/lib/escape';
 import ltrim from 'validator/lib/ltrim';
 import rtrim from 'validator/lib/rtrim';
-import { isString } from 'lodash';
+import { isString } from 'lib/isSomething';
 import { getInfo } from 'code/index';
 import { error, success } from 'code/format';
 import { generateJwtToken, jwtMiddleware } from 'lib/jwt';
@@ -25,7 +25,7 @@ import { enumCheckUser } from 'database/user/controller';
 import { verifyRequest, passwordIsMalformed, generateToken } from './utility';
 import { initPasswordReset, resetPassword } from './resetPassword';
 import checkProfanity from 'lib/profanityFilter';
-import CaptchaInstance from 'lib/captcha';
+import { captchaMiddleware } from 'lib/captcha';
 
 import type { Request, NextFunction, Response } from 'express';
 
@@ -35,8 +35,6 @@ class accountCRUD {
 		const hasError = verifyRequest(req, res, true, true);
 		if (hasError)
 			return hasError.res;
-		if (await CaptchaInstance.verify(req.body.captcha) !== true)
-			return error(req, res, 'CA_001', { data: { key: 'captcha' } });
 		if (checkProfanity(req.body.name, false) !== null)
 			return error(req, res, 'US_031', { data: { key: 'name' } });
 		if (!isLength(req.body.name, { min: 4, max: 255 }))
@@ -416,12 +414,12 @@ export default Router()
 	.get('/logout', jwtMiddleware.acceptUser, asyncHandler(account.logout))
 
 	.post('/block', jwtMiddleware.acceptAdministrator, asyncHandler(account.updateBlock))
-	.post('/create', asyncHandler(account.create))
+	.post('/create', captchaMiddleware, asyncHandler(account.create))
 	.post('/check', asyncHandler(account.checkUser))
 	.post('/list', jwtMiddleware.acceptAdministrator, asyncHandler(account.getUserList))
 	.post('/token', asyncHandler(account.token))
 	.post('/role', jwtMiddleware.acceptAdministrator, asyncHandler(account.updateRole))
-	.post('/reset/init', asyncHandler(initPasswordReset))
+	.post('/reset/init', captchaMiddleware, asyncHandler(initPasswordReset))
 	.post('/reset/update', asyncHandler(resetPassword))
 
 	.put('/', jwtMiddleware.acceptUser, asyncHandler(account.update))

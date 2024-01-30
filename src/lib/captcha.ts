@@ -1,7 +1,12 @@
 import { createHash, createHmac, randomInt, randomBytes, generateKey } from 'crypto';
 import { CronJob } from 'cron';
+import { isString } from 'lib/isSomething';
+import isEmpty from 'validator/lib/isEmpty';
+import { error } from 'code/format';
+import getInfo from '@/code';
 import { log } from './log';
 import type { KeyObject } from 'crypto';
+import type { NextFunction, Request, Response } from 'express';
 
 interface captchaCreate {
 	algorithm: string;
@@ -131,6 +136,25 @@ class Captcha {
 		return false;
 	}
 }
-
 const CaptchaInstance = new Captcha();
+
+/**
+ * Middleware for check if captcha is present and valid
+ */
+export const captchaMiddleware = (req: Request, res: Response, next: NextFunction): void | Response => {
+	if (!Object.keys(req.body).length)
+		return error(req, res, 'RE_001').res;
+	if (!req.body.captcha || !isString(req.body.captcha) || isEmpty(req.body.captcha))
+		return error(req, res, 'RE_002', { data: { key: 'captcha' } }).res;
+	CaptchaInstance.verify(req.body.captcha)
+		.then((isOk) => {
+			if (isOk === true)
+				return next();
+			return error(req, res, 'CA_001', { status: 401 }).res;
+		})
+		.catch((e) => {
+			log.error(e);
+			next(new Error(getInfo('GE_001').message));
+		});
+};
 export default CaptchaInstance;

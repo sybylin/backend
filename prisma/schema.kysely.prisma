@@ -30,6 +30,19 @@ enum Solution {
 	ARRAY
 	OBJECT
 }
+
+enum ReportType {
+	UI
+	BUG
+	IMPROVEMENT
+}
+
+enum ReportStatus {
+	OPEN
+	PROGRESS
+	COMPLETE
+	REFUSED
+}
 // #endregion Enum
 
 // #region Main tables
@@ -123,6 +136,15 @@ model Token {
 	@@unique([user_id, token])
 	//// relations
 	user								User								@relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model Report {
+	id									Int									@id @default(autoincrement())
+	type								ReportType					@default(UI)
+	message							String
+	status							ReportStatus				@default(OPEN)
+	creation_date				DateTime?						@default(now())
+	modification_date		DateTime?						@updatedAt
 }
 // #endregion Main tables
 

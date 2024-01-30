@@ -93,6 +93,11 @@ const list: {
 		EN_103: 'Enigma finished',
 		EN_104: 'Enigma solution',
 		EN_105: 'User have the necessary rights to edit this enigma',
+	},
+	report: {
+		RP_001: 'Report creation failed',
+		RP_101: 'Report has been created',
+		RP_102: 'Report list'
 	}
 };
 

@@ -1,7 +1,7 @@
 import { randomInt } from 'crypto';
 import isEmail from 'validator/lib/isEmail';
 import isEmpty from 'validator/lib/isEmpty';
-import { isString } from 'lodash';
+import { isString } from 'lib/isSomething';
 import { error, returnFormat } from 'code/format';
 import type { Response } from 'express';
 import type { UserRequest } from './interface';

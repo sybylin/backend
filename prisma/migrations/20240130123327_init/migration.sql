@@ -16,6 +16,12 @@ CREATE TYPE "SeriesStatus" AS ENUM ('UNPUBLISHED', 'PENDING', 'PUBLISHED');
 -- CreateEnum
 CREATE TYPE "Solution" AS ENUM ('STRING', 'ARRAY', 'OBJECT');
 
+-- CreateEnum
+CREATE TYPE "ReportType" AS ENUM ('UI', 'BUG', 'IMPROVEMENT');
+
+-- CreateEnum
+CREATE TYPE "ReportStatus" AS ENUM ('OPEN', 'PROGRESS', 'COMPLETE', 'REFUSED');
+
 -- CreateTable
 CREATE TABLE "Achievement" (
     "id" SERIAL NOT NULL,
@@ -78,6 +84,18 @@ CREATE TABLE "Token" (
     "token" TEXT NOT NULL,
     "is_invalid" BOOLEAN NOT NULL DEFAULT false,
     "deadline" TIMESTAMP(3) NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "Report" (
+    "id" SERIAL NOT NULL,
+    "type" "ReportType" NOT NULL DEFAULT 'UI',
+    "message" TEXT NOT NULL,
+    "status" "ReportStatus" NOT NULL DEFAULT 'OPEN',
+    "creation_date" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
+    "modification_date" TIMESTAMP(3),
+
+    CONSTRAINT "Report_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -325,7 +343,7 @@ ALTER TABLE "UserSeriesRating" ADD CONSTRAINT "UserSeriesRating_series_id_fkey" 
 INSERT INTO "User" (name, email, password, avatar, role, verify, last_connection, creation_date, modification_date)
 VALUES (
   'Nyphel',
-  'nyphel@sybyl.in',
+  'hello@sybyl.in',
   'd1b07850f12048849c283a5ced0fcc5f4b73c4588c33744b0367a210cb7a439d2de158361a84105e5f82654aacca22f4c2f82075155410d6d0377b1a9f845cce.44757948c10119084cb91f915f0f70a3',
   null,
   'ADMINISTRATOR',

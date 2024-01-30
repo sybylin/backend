@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { isEmpty, isString } from 'lodash';
+import { isString } from 'lib/isSomething';
+import isEmpty from 'validator/lib/isEmpty';
 import { Router } from 'express';
 import { error, success } from '@/code/format';
 import asyncHandler from '@/lib/asyncHandler';
 import { jwtMiddleware } from '@/lib/jwt';
-import AchievementController from 'database/achievement/controller';
+// import AchievementController from 'database/achievement/controller';
 import UserAchievementController from 'database/userAchievement/controller';
 import { getAchievement, achievementName } from 'src/achievement';
 import type { Request, Response, NextFunction } from 'express';

@@ -27,6 +27,7 @@ export const {
 	enigma, enigmaContent, enigmaCreator, enigmaFinished, enigmaSolution,
 	series, seriesStarted, seriesCreator, seriesEnigmaOrder, seriesVerifiedBy, seriesFinished,
 	user, userAchievement, userBlocked, userResetPassword, userSeriesRating,
-	token
+	token,
+	report
 } = prisma;
 export default prisma;

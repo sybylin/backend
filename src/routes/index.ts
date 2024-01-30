@@ -9,6 +9,7 @@ import main from 'routes/main';
 import rights from 'routes/rights';
 import series from 'routes/series';
 import user from 'routes/user';
+import report from 'routes/report';
 import type { Application, NextFunction, Request, Response } from 'express';
 
 export default (app: Application): void => {
@@ -18,6 +19,7 @@ export default (app: Application): void => {
 	app.use('/rights', apiLimiter, rights);
 	app.use('/series', apiLimiter, series);
 	app.use('/user', apiLimiter, user);
+	app.use('/report', apiLimiter, report);
 
 	/// 404
 	app.use((req: Request, res: Response) => {
