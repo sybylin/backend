@@ -17,7 +17,8 @@ const list: {
 		RE_003: 'La clé n\'est pas présente dans les paramètres',
 		RE_004: 'Aucun fichier n\'est présent dans la requête',
 		RE_005: 'Aucun fichiers ne sont présent dans la requête',
-		RE_006: 'Le type de fichier n\'est pas autorisé'
+		RE_006: 'Le type de fichier n\'est pas autorisé',
+		RE_007: 'Request params is empty',
 	},
 	jwt: {
 		JW_001: 'jwt est invalide',
@@ -45,7 +46,8 @@ const list: {
 
 		SE_101: 'La série a été créée',
 		SE_102: 'La série a été mise à jour',
-		SE_103: 'L\'image de la série a été mise à jour'
+		SE_103: 'L\'image de la série a été mise à jour',
+		SE_104: 'La série a été supprimée'
 	},
 	user: {
 		US_001: 'Utilisateur inexistant dans la base de données',
@@ -75,17 +77,28 @@ const list: {
 		US_107: 'L\'utilisateur existe',
 		US_108: 'L\'utilisateur a été reconnu',
 		US_120: 'L\'initialisation de la réinitialisation du mot de passe a commencé',
+		US_121: 'Réinitialisation du mot de passe réussie',
 		US_122: 'Le rôle est mis à jour',
 		US_131: 'Liste d\'utilisateurs'
 	},
 	enigma: {
 		EN_001: 'Identifiant incorrect',
-		EN_002: 'Énigma ou utilisateur incorrect',
+		EN_002: 'Énigme ou identifiant utilisateur incorrect',
+		EN_003: 'La création de l\'énigme a échoué',
+		EN_004: 'Une énigme existe déjà avec ce nom',
+		EN_005: 'L\'utilisateur n\'a pas les droits nécessaires pour éditer cette énigme',
 
 		EN_101: 'Énigme',
 		EN_102: 'Énigmes',
 		EN_103: 'Énigme fini',
-		EN_104: 'Solution de l\'énigme'
+		EN_104: 'Solution de l\'énigme',
+		EN_105: 'L\'utilisateur a les droits nécessaires pour éditer cette énigme',
+	},
+	report: {
+		RP_001: 'La création du rapport a échoué',
+		RP_101: 'Le rapport a été créé',
+		RP_102: 'Liste des rapports',
+		RP_103: 'Le rapport a été mis à jour'
 	}
 };
 

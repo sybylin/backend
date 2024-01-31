@@ -97,7 +97,8 @@ const list: {
 	report: {
 		RP_001: 'Report creation failed',
 		RP_101: 'Report has been created',
-		RP_102: 'Report list'
+		RP_102: 'Report list',
+		RP_103: 'Report has been updated'
 	}
 };
 

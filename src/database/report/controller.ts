@@ -1,3 +1,5 @@
+import DOMPurify from 'dompurify';
+import { JSDOM } from 'jsdom';
 import { report } from 'database/db.instance';
 import { Report, ReportType } from '@prisma/client';
 
@@ -8,7 +10,7 @@ export default class controller {
 		return report.create({
 			data: {
 				type: data.type,
-				message: data.message
+				message: DOMPurify(new JSDOM('').window).sanitize(data.message)
 			},
 			select: {
 				id: true
@@ -54,7 +56,7 @@ export default class controller {
 			},
 			data: {
 				type: data.type,
-				message: data.message,
+				message: DOMPurify(new JSDOM('').window).sanitize(data.message),
 				status: data.status
 			}
 		});

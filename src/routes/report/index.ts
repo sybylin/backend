@@ -9,12 +9,21 @@ import { jwtMiddleware } from 'lib/jwt';
 import { isString } from 'lib/isSomething';
 import ReportController from 'database/report/controller';
 import type { Request, Response, NextFunction } from 'express';
-import type { ReportType } from '@prisma/client';
+import type { ReportStatus, ReportType } from '@prisma/client';
 
 interface ReportCreateRequest extends Request {
 	body: {
 		type: ReportType,
 		message: string
+	}
+}
+
+interface ReportUpdateRequest extends Request {
+	body: {
+		id: number,
+		type: ReportType,
+		message: string,
+		status: ReportStatus
 	}
 }
 
@@ -60,8 +69,28 @@ class Report {
 		});
 	}
 
-	static async update(req: ReportCreateRequest, res: Response, _next: NextFunction) {
+	static async update(req: ReportUpdateRequest, res: Response, _next: NextFunction) {
+		if (!Object.keys(req.body).length)
+			return error(req, res, 'RE_001').res;
+		if (!req.body.id || isNaN(req.body.id))
+			return error(req, res, 'RE_002', { data: { key: 'id' } }).res;
+		if (!req.body.type || !isString(req.body.type) || isEmpty(req.body.type))
+			return error(req, res, 'RE_002', { data: { key: 'type' } }).res;
+		if (!req.body.message || !isString(req.body.message) || isEmpty(req.body.message))
+			return error(req, res, 'RE_002', { data: { key: 'message' } }).res;
+		if (!req.body.status || !isString(req.body.status) || isEmpty(req.body.status))
+			return error(req, res, 'RE_002', { data: { key: 'status' } }).res;
 
+		return success(req, res, 'RP_103', {
+			data: {
+				update: await ReportController.update({
+					id: req.body.id,
+					type: req.body.type,
+					message: req.body.message,
+					status: req.body.status
+				})
+			}
+		});
 	}
 
 	static async delete(req: ReportDeleteRequest, res: Response, _next: NextFunction) {
@@ -81,4 +110,5 @@ class Report {
 export default Router()
 	.get('/', jwtMiddleware.acceptAdministrator, asyncHandler(Report.get))
 	.post('/', captchaMiddleware, asyncHandler(Report.create))
+	.put('/', jwtMiddleware.acceptAdministrator, asyncHandler(Report.update))
 	.delete('/', jwtMiddleware.acceptAdministrator,asyncHandler(Report.delete));
