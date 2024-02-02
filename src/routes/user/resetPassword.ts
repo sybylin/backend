@@ -60,13 +60,17 @@ export const initPasswordReset = async (req: InitPasswordRequest, res: Response<
 		});
 		if (!userReset)
 			return error(req, res, 'US_020').res;
-		mail.resetPassword(user.email, {
+		await mail.resetPassword(user.email, {
 			url: (process.env.NODE_ENV === 'production')
 				? `https://sybyl.in/user/reset/${token}`
 				: `http://localhost:9100/user/reset/${token}`
-		})
-			.catch(() => next(new Error(getInfo('GE_002').message)));
+		});
 	} catch (e) {
+		if ((e as any).constructor.name === 'MailError') {
+			return error(req, res, 'GE_002', {
+				status: (e as any).code
+			}).res;
+		}
 		next(new Error(getInfo('GE_001').message));
 	}
 	return success(req, res, 'US_120', {
@@ -111,7 +115,7 @@ export const resetPassword = async (req: ResetPasswordRequest, res: Response<any
 	if (!await UserController.updatePassword(userResetToken.user_id, req.body.password))
 		return error(req, res, 'GE_001').res;
 
-	mail.passwordUpdate(userResetToken.user.email)
+	await mail.passwordUpdate(userResetToken.user.email)
 		.catch(() => next(new Error(getInfo('GE_002').message)));
 	UserResetPassword.deleteUserTokens(userResetToken.user_id);
 

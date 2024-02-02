@@ -5,6 +5,7 @@ import { log } from 'lib/log';
 import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 
 export type MailReturn = Promise<boolean>;
+type MailType = 'confirm' | 'password' | 'passwordUpdate' | 'verify';
 export interface MailInfo {
 	from?: string;
 	to: string;
@@ -20,10 +21,7 @@ export class MailError extends Error {
 }
 
 export class Mail {
-	private confirmMail: string;
-	private passwordMail: string;
-	private passwordUpdateMail: string;
-	private verifyMail: string;
+	private mailTemplates: Map<MailType, string>;
 	private nodeMailer: nodemailer.Transporter<SMTPTransport.SentMessageInfo>;
 	private icon = (process.env.NODE_ENV === 'production')
 		? 'https://sybyl.in/icons/favicon-128x128.png'
@@ -31,10 +29,14 @@ export class Mail {
 	public defaultMail: string;
 
 	constructor(defaultMail?: string) {
-		this.confirmMail = '';
-		this.passwordMail = '';
-		this.passwordUpdateMail = '';
-		this.verifyMail = '';
+		const list = [
+			{ name: 'confirm', file: 'confirm.html' },
+			{ name: 'password', file: 'password.html' },
+			{ name: 'passwordUpdate', file: 'passwordUpdate.html' },
+			{ name: 'verify', file: 'verify.html' }
+		] as { name: MailType, file: string }[];
+
+		this.mailTemplates = new Map();
 		this.nodeMailer = nodemailer.createTransport(
 			(process.env.NODE_ENV === 'production')
 				? {
@@ -51,16 +53,12 @@ export class Mail {
 					port: 7895
 				}
 		);
-		this.defaultMail = defaultMail ?? 'Sybylin <hello@sybyl.in';
+		this.defaultMail = defaultMail ?? 'Sybylin <verify@sybyl.in>';
 
-		readFile(resolve('.', 'mail', 'dist', 'confirm.html'), { encoding: 'utf-8' })
-			.then((d) => this.confirmMail = d);
-		readFile(resolve('.', 'mail', 'dist', 'password.html'), { encoding: 'utf-8' })
-			.then((d) => this.passwordMail = d);
-		readFile(resolve('.', 'mail', 'dist', 'passwordUpdate.html'), { encoding: 'utf-8' })
-			.then((d) => this.passwordUpdateMail = d);
-		readFile(resolve('.', 'mail', 'dist', 'verify.html'), { encoding: 'utf-8' })
-			.then((d) => this.verifyMail = d);
+		for (const el of list) {
+			readFile(resolve('.', 'mail', 'dist', el.file), { encoding: 'utf-8' })
+				.then((d) => this.mailTemplates.set(el.name, d));
+		}
 	}
 
 	private formatString(str: string, args: Record<string, unknown>): string {
@@ -84,8 +82,10 @@ export class Mail {
 		return ret;
 	}
 
-	private send(mailData: string, mailInfo: MailInfo, args?: Record<string, unknown>): MailReturn {
+	private send(mailData: string | undefined, mailInfo: MailInfo, args?: Record<string, unknown>): MailReturn {
 		return new Promise((res, rej) => {
+			if (!mailData)
+				return rej(new MailError('Mail rejected'));
 			this.nodeMailer.sendMail({
 				from: mailInfo.from ?? this.defaultMail,
 				to: mailInfo.to,
@@ -104,8 +104,12 @@ export class Mail {
 		});
 	}
 
+	private getTemplate(type: MailType) {
+		return this.mailTemplates.get(type);
+	}
+
 	connectionCode(to: string, args: Record<'token', string>): MailReturn {
-		return this.send(this.confirmMail, {
+		return this.send(this.getTemplate('confirm'), {
 			from: 'Sybylin <verify@sybyl.in>',
 			to,
 			subject: 'Sybylin connection code'
@@ -113,7 +117,7 @@ export class Mail {
 	}
 
 	resetPassword(to: string, args: Record<'url', string>): MailReturn {
-		return this.send(this.passwordMail, {
+		return this.send(this.getTemplate('password'), {
 			from: 'Sybylin <verify@sybyl.in>',
 			to,
 			subject: 'Sybylin password reset'
@@ -121,7 +125,7 @@ export class Mail {
 	}
 
 	passwordUpdate(to: string): MailReturn {
-		return this.send(this.passwordUpdateMail, {
+		return this.send(this.getTemplate('passwordUpdate'), {
 			from: 'Sybylin <verify@sybyl.in>',
 			to,
 			subject: 'Sybylin password update'
@@ -129,7 +133,7 @@ export class Mail {
 	}
 
 	accountVerification(to: string, args: Record<'token', string>): MailReturn {
-		return this.send(this.verifyMail, {
+		return this.send(this.getTemplate('verify'), {
 			from: 'Sybylin <verify@sybyl.in>',
 			to,
 			subject: 'Sybylin account verification'
