@@ -29,10 +29,13 @@ class UploadEnigmaLogo extends Upload {
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	check = async (req: Request, res: Response, _next: NextFunction): Promise<void | Response> => {
+		if (!req.file)
+			return error(req, res, 'RE_006').res;
+
 		const filepath = resolve(this.path, (req.file as Express.Multer.File).filename);
 		const genFilePath = join(this.publicPath, (req.file as Express.Multer.File).filename);
 
-		enigmaModificationIsAuthorized(req, res, true);
+		await enigmaModificationIsAuthorized(req, res, true);
 		if (!await mimetypeIsAuthorized(filepath, ['jpg', 'png']))
 			return error(req, res, 'RE_006').res;
 		const oldName = await Enigma.updatePart(Number(req.body.enigma_id), 'image', genFilePath) as Record<'image', string>;

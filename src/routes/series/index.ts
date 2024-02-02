@@ -2,12 +2,12 @@
 import { jwtMiddleware } from '@/lib/jwt';
 import asyncHandler from '@/lib/asyncHandler';
 import { Router } from 'express';
-import { isString } from 'lib/isSomething';
+import { isNumber, isString } from 'lib/isSomething';
 import isEmpty from 'validator/lib/isEmpty';
-import isNumeric from 'validator/lib/isNumeric';
 import escape from 'validator/lib/escape';
 import ltrim from 'validator/lib/ltrim';
 import rtrim from 'validator/lib/rtrim';
+import isNumeric from 'validator/lib/isNumeric';
 import { error, success } from 'code/format';
 import { seriesLogo } from '@/lib/upload';
 import { seriesIsPublished } from '@/lib/series';
@@ -83,9 +83,9 @@ class series extends serieCRUD {
 	static async getPublishedSeries(req: Request, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.sort || typeof req.body.sort !== 'number')
+		if (!req.body.sort || !isNumber(req.body.sort))
 			return error(req, res, 'RE_002', { data: { key: 'sort' } }).res;
-		if (req.body.id && typeof req.body.id !== 'number')
+		if (req.body.id && !isNumber(req.body.id))
 			return error(req, res, 'RE_002', { data: { key: 'id' } }).res;
 		if (req.body.last_element && !['string', 'number'].includes(typeof req.body.last_element))
 			return error(req, res, 'RE_002', { data: { key: 'last_element' } }).res;
@@ -137,7 +137,7 @@ class series extends serieCRUD {
 	static async findOne(req: Request, res: Response, _next: NextFunction, rating = false) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.series_id || typeof req.body.series_id !== 'number')
+		if (!req.body.series_id || !isNumber(req.body.series_id))
 			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
 		/*
 			if (!await SeriesController.userRight(Number(req.body.series_id), req.user.id))
@@ -146,7 +146,7 @@ class series extends serieCRUD {
 		return success(req, res, 'SE_101', {
 			data: {
 				series: (!rating)
-					? await SeriesController.findOne(Number(req.body.series_id), req.user?.id ?? -1)
+					? await SeriesController.findOne(Number(req.body.series_id), req.user.id)
 					: undefined,
 				rating: (rating)
 					? await SeriesController.rating(Number(req.body.series_id))
@@ -158,7 +158,7 @@ class series extends serieCRUD {
 	static async findUserRating(req: Request, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.series_id || typeof req.body.series_id !== 'number')
+		if (!req.body.series_id || !isNumber(req.body.series_id))
 			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
 		return success(req, res, 'SE_101', {
 			data: {
@@ -170,9 +170,9 @@ class series extends serieCRUD {
 	static async putUserRating(req: Request, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.series_id || typeof req.body.series_id !== 'number')
+		if (!req.body.series_id || !isNumber(req.body.series_id))
 			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
-		if (!req.body.rating || typeof req.body.rating !== 'number')
+		if (!req.body.rating || !isNumber(req.body.rating))
 			return error(req, res, 'RE_002', { data: { key: 'rating' } }).res;
 		return success(req, res, 'SE_101', {
 			data: {
@@ -208,15 +208,15 @@ class series extends serieCRUD {
 	static async updatePart(part: 'title' | 'description' | 'published', req: Request, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.series_id || typeof req.body.series_id !== 'number')
+		if (!req.body.series_id || !isNumber(req.body.series_id))
 			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
 		if (!Object.prototype.hasOwnProperty.call(req.body, part))
 			return error(req, res, 'RE_002', { data: { key: part } }).res;
-		if (!await SeriesController.userRight(Number(req.body.series_id), req.user.id))
+		if (!await SeriesController.userRight(req.body.series_id, req.user.id))
 			return error(req, res, 'SE_003').res;
 		return success(req, res, 'SE_102', {
 			data: {
-				isUpdated: await SeriesController.updatePart(Number(req.body.series_id), part, req.body[part])
+				isUpdated: await SeriesController.updatePart(req.body.series_id, part, req.body[part])
 			}
 		}).res;
 	}
@@ -224,7 +224,7 @@ class series extends serieCRUD {
 	static async updateEnigmaOrder(req: Request, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.series_id || typeof req.body.series_id !== 'number')
+		if (!req.body.series_id || !isNumber(req.body.series_id))
 			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
 		if (!req.body.order || typeof req.body.order !== 'object')
 			return error(req, res, 'RE_002', { data: { key: 'order' } }).res;
@@ -243,7 +243,7 @@ class series extends serieCRUD {
 	static async publishPending(req: Request, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.series_id || typeof req.body.series_id !== 'number')
+		if (!req.body.series_id || !isNumber(req.body.series_id))
 			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
 		if (!await SeriesController.userRight(Number(req.body.series_id), req.user.id))
 			return error(req, res, 'SE_003').res;
@@ -258,7 +258,7 @@ class series extends serieCRUD {
 	static async unpublish(req: Request, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.series_id || typeof req.body.series_id !== 'number')
+		if (!req.body.series_id || !isNumber(req.body.series_id))
 			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
 		if (!await SeriesController.userRight(Number(req.body.series_id), req.user.id))
 			return error(req, res, 'SE_003').res;
@@ -284,7 +284,7 @@ class series extends serieCRUD {
 	static async publishModerator(req: Request, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.series_id || typeof req.body.series_id !== 'number')
+		if (!req.body.series_id || !isNumber(req.body.series_id))
 			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
 		if (!await SeriesVerifiedByController.isModeratorOfSeries(Number(req.body.series_id), req.user.id))
 			return error(req, res, 'SE_003').res;
@@ -321,7 +321,7 @@ export default Router()
 	.post('/one/rating', jwtMiddleware.acceptUser, asyncHandler((req, res, next) => series.findOne(req, res, next, true)))
 	.put('/one/rating', jwtMiddleware.acceptUser, asyncHandler(series.putUserRating))
 
-	.post('/update/image', seriesIsPublished, jwtMiddleware.acceptUser, seriesLogo.middleware.single('image'), asyncHandler(seriesLogo.check))
+	.post('/update/image', jwtMiddleware.acceptUser, seriesLogo.middleware.single('image'), seriesIsPublished, asyncHandler(seriesLogo.check))
 	.post('/update/:path', seriesIsPublished, jwtMiddleware.acceptUser, asyncHandler((req, res, next) => {
 		if (!['title', 'description', 'order'].includes(req.params.path))
 			return;

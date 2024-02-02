@@ -19,6 +19,8 @@ const list: {
 		RE_005: 'No files are present in the request',
 		RE_006: 'The file type is not authorized',
 		RE_007: 'Request params is empty',
+		RE_008: 'Request querys is empty',
+		RE_009: 'Key is not present in the querys',
 	},
 	jwt: {
 		JW_001: 'jwt is invalid',

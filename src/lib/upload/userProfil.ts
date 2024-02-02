@@ -3,7 +3,7 @@ import multer from 'multer';
 import { error, success } from 'code/format';
 import UserController from 'database/user/controller';
 import Upload from './abstractUpload';
-import { filenameGeneration, mimetypeIsAuthorized, removeOldImage, serieModificationIsAuthorized } from './lib';
+import { filenameGeneration, mimetypeIsAuthorized, removeOldImage } from './lib';
 import type { Request, Response, NextFunction } from 'express';
 import type { Multer } from 'multer';
 
@@ -29,10 +29,12 @@ class UploadUserProfil extends Upload {
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	check = async (req: Request, res: Response, _next: NextFunction): Promise<void | Response> => {
+		if (!req.file)
+			return error(req, res, 'RE_006').res;
+
 		const filepath = resolve(this.path, (req.file as Express.Multer.File).filename);
 		const genFilePath = join(this.publicPath, (req.file as Express.Multer.File).filename);
 
-		serieModificationIsAuthorized(req, res);
 		if (!await mimetypeIsAuthorized(filepath, ['jpg', 'png']))
 			return error(req, res, 'RE_006').res;
 		const oldName = await UserController.updateAvatar(req.user.id, genFilePath);

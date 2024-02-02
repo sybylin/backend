@@ -9,8 +9,7 @@ export default {
 		'express', 'helmet', 'hpp', 'jsdom', 'jsonwebtoken', 'lz-string',
 		'nodemailer', 'argon2', 'util', 'express-rate-limit', '@prisma/client',
 		'validator/lib/isEmail', 'validator/lib/normalizeEmail',
-		'validator/lib/isEmpty', 'validator/lib/isNumeric',
-		'validator/lib/isLength',
+		'validator/lib/isNumeric', 'validator/lib/isEmpty', 'validator/lib/isLength',
 		'validator/lib/escape', 'validator/lib/ltrim', 'validator/lib/rtrim',
 		'file-type', 'multer'
 	],

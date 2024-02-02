@@ -1,4 +1,5 @@
 import { achievement, achievementCreator } from 'database/db.instance';
+import { isNumber } from 'lib/isSomething';
 import { Achievement } from '@prisma/client';
 
 interface isExist {
@@ -69,16 +70,16 @@ export default class controller {
 	}
 
 	static async findOne(idOrName: number | string): Promise<Achievement | null> {
-		if (typeof(idOrName) === 'number') {
+		if (isNumber(idOrName)) {
 			return achievement.findUnique({
 				where: {
-					id: idOrName
+					id: idOrName as number
 				}
 			});
 		}
 		return achievement.findUnique({
 			where: {
-				name: idOrName
+				name: idOrName as string
 			}
 		});
 	}
@@ -110,16 +111,16 @@ export default class controller {
 	}
 
 	static async delete(idOrName: number | string): Promise<Achievement> {
-		if (typeof(idOrName) === 'number') {
+		if (isNumber(idOrName)) {
 			return achievement.delete({
 				where: {
-					id: idOrName
+					id: idOrName as number
 				}
 			});
 		}
 		return achievement.delete({
 			where: {
-				name: idOrName
+				name: idOrName as string
 			}
 		});
 	}

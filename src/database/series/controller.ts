@@ -104,30 +104,18 @@ export default class controller {
 						{ order: 'asc' }
 					]
 				},
-				series_finished: (user_id === -1)
-					? undefined
-					: {
-						where: {
-							series_id,
-							user_id
-						},
-						select: {
-							completion_date: true
-						}
-					},
-				series_verified_by: (user_id === -1)
-					? undefined
-					: {
-						where: {
-							series_id,
-							user_id
-						},
-						select: {
-							user_id: true,
-							verified: true,
-							rejection_reason: true
-						}
+				series_finished: {
+					select: {
+						completion_date: true
 					}
+				},
+				series_verified_by: {
+					select: {
+						user_id: true,
+						verified: true,
+						rejection_reason: true
+					}
+				}
 			}
 		});
 		const _rating_ = await userSeriesRating.aggregate({

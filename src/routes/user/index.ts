@@ -2,13 +2,12 @@
 import { Router } from 'express';
 import isEmail from 'validator/lib/isEmail';
 import isEmpty from 'validator/lib/isEmpty';
-import isNumeric from 'validator/lib/isNumeric';
 import isLength from 'validator/lib/isLength';
 import normalizeEmail from 'validator/lib/normalizeEmail';
 import escape from 'validator/lib/escape';
 import ltrim from 'validator/lib/ltrim';
 import rtrim from 'validator/lib/rtrim';
-import { isString } from 'lib/isSomething';
+import { isNumber, isString } from 'lib/isSomething';
 import { getInfo } from 'code/index';
 import { error, success } from 'code/format';
 import { generateJwtToken, jwtMiddleware } from 'lib/jwt';
@@ -285,7 +284,7 @@ class account extends accountCRUD {
 		} else {
 			if (isEmpty(String(req.body.token)))
 				return error(req, res, 'RE_002', { data: { key: 'token' } }).res;
-			if (!isNumeric(String(req.body.token)) || String(req.body.token).length !== 8)
+			if (!isNumber(req.body.token) || String(req.body.token).length !== 8)
 				return error(req, res, 'US_008').res;
 			const user = await UserController.findOne(req.body.name);
 			if (!user || user.verify) {
@@ -322,7 +321,7 @@ class account extends accountCRUD {
 	}
 
 	static async updateRole(req: Request, res: Response, next: NextFunction) {
-		if (!req.body.id || typeof req.body.id !== 'number')
+		if (!req.body.id || !isNumber(req.body.id))
 			return error(req, res, 'RE_002', { data: { key: 'id' } }).res;
 		if (!req.body.role || isEmpty(req.body.role) || !isString(req.body.role))
 			return error(req, res, 'RE_002', { data: { key: 'role' } }).res;
@@ -337,7 +336,7 @@ class account extends accountCRUD {
 	}
 
 	static async updateBlock(req: Request, res: Response, next: NextFunction) {
-		if (!req.body.id || typeof req.body.id !== 'number')
+		if (!req.body.id || !isNumber(req.body.id))
 			return error(req, res, 'RE_002', { data: { key: 'id' } }).res;
 		if (req.body.id === req.user.id)
 			return error(req, res, 'US_030').res;
@@ -370,7 +369,7 @@ class account extends accountCRUD {
 	static async getUserList(req: Request, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.sort || typeof req.body.sort !== 'number')
+		if (!req.body.sort || !isNumber(req.body.sort))
 			return error(req, res, 'RE_002', { data: { key: 'sort' } }).res;
 		if (req.body.last_element && typeof req.body.last_element !== 'string')
 			return error(req, res, 'RE_002', { data: { key: 'last_id' } }).res;

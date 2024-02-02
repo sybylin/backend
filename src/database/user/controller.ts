@@ -1,6 +1,7 @@
 import prisma, { user, enigmaFinished, seriesFinished, userAchievement } from 'database/db.instance';
 import checkDate from 'database/userBlocked/checkDate';
 import { hash, verify } from 'lib/password';
+import { isNumber } from 'lib/isSomething';
 import { log } from 'lib/log';
 import { User, Role } from '@prisma/client';
 
@@ -104,9 +105,9 @@ export default class controller {
 
 	static findOne(nameOrId: string | number): Promise<User | null> {
 		return user.findUnique({
-			where: (typeof nameOrId === 'number')
-				? { id: nameOrId }
-				: { name: nameOrId }
+			where: (isNumber(nameOrId))
+				? { id: nameOrId as number }
+				: { name: nameOrId as string }
 		});
 	}
 
@@ -120,9 +121,9 @@ export default class controller {
 
 	static async cleanFindOneFull(nameOrId: string | number): Promise<FullUser | null> {
 		const getUser = await user.findUnique({
-			where: (typeof nameOrId === 'number')
-				? { id: nameOrId }
-				: { name: nameOrId },
+			where: (isNumber(nameOrId))
+				? { id: nameOrId as number }
+				: { name: nameOrId as string },
 			select: selectForGenCleanUser
 		});
 		return genCleanUser(getUser, false) as FullUser;
@@ -130,9 +131,9 @@ export default class controller {
 
 	static async cleanFindOne(nameOrId: string | number): Promise<CleanUser | null> {
 		const getUser = await user.findUnique({
-			where: (typeof nameOrId === 'number')
-				? { id: nameOrId }
-				: { name: nameOrId },
+			where: (isNumber(nameOrId))
+				? { id: nameOrId as number }
+				: { name: nameOrId as string },
 			select: selectForGenCleanUser
 		});
 		return genCleanUser(getUser, true) as CleanUser;
@@ -183,9 +184,9 @@ export default class controller {
 	): Promise<{ data: unknown, info: enumCheckUser }> {
 		return new Promise((res) => {
 			user.findUnique({
-				where: (typeof nameOrId === 'number')
-					? { id: nameOrId }
-					: { name: nameOrId },
+				where: (isNumber(nameOrId))
+					? { id: nameOrId as number }
+					: { name: nameOrId as string },
 				select: {
 					id: true,
 					password: true,
@@ -282,19 +283,19 @@ export default class controller {
 		}) !== null;
 	}
 
-	static async updateAvatar(idOrName: number | string, avatar: string): Promise<{ avatar: string | null } | null> {
+	static async updateAvatar(nameOrId: number | string, avatar: string): Promise<{ avatar: string | null } | null> {
 		const ret = await user.findUnique({
-			where: (typeof idOrName === 'number')
-				? { id: idOrName }
-				: { name: idOrName },
+			where: (isNumber(nameOrId))
+				? { id: nameOrId as number }
+				: { name: nameOrId as string },
 			select: {
 				avatar: true
 			}
 		});
 		await user.update({
-			where: (typeof idOrName === 'number')
-				? { id: idOrName }
-				: { name: idOrName },
+			where: (isNumber(nameOrId))
+				? { id: nameOrId as number }
+				: { name: nameOrId as string },
 			data: {
 				avatar
 			},
@@ -307,9 +308,9 @@ export default class controller {
 
 	static delete(nameOrId: string | number): Promise<User> {
 		return user.delete({
-			where: (typeof nameOrId === 'number')
-				? { id: nameOrId }
-				: { name: nameOrId }
+			where: (isNumber(nameOrId))
+				? { id: nameOrId as number }
+				: { name: nameOrId as string }
 		});
 	}
 

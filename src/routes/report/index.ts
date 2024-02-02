@@ -1,12 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Router } from 'express';
 import isEmpty from 'validator/lib/isEmpty';
-import isNumeric from 'validator/lib/isNumeric';
 import { error, success } from 'code/format';
 import asyncHandler from 'lib/asyncHandler';
 import { captchaMiddleware } from 'lib/captcha';
 import { jwtMiddleware } from 'lib/jwt';
-import { isString } from 'lib/isSomething';
+import { isNumber, isString } from 'lib/isSomething';
 import ReportController from 'database/report/controller';
 import type { Request, Response, NextFunction } from 'express';
 import type { ReportStatus, ReportType } from '@prisma/client';
@@ -96,7 +95,7 @@ class Report {
 	static async delete(req: ReportDeleteRequest, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.id || isNumeric(String(req.body.id)))
+		if (!req.body.id || !isNumber(req.body.id))
 			return error(req, res, 'RE_002', { data: { key: 'id' } }).res;
 		return success(req, res, 'RP_102', {
 			data: {

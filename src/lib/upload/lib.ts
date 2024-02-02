@@ -2,10 +2,10 @@ import { randomBytes } from 'crypto';
 import { open, rm } from 'fs/promises';
 import { extname, resolve } from 'path';
 import filetype from 'file-type';
-import isNumeric from 'validator/lib/isNumeric';
 import { error } from 'code/format';
 import EnigmaCreator from 'database/enigmaCreator/controller';
 import SeriesController from 'database/series/controller';
+import { isNumeric } from 'lib/isSomething';
 import type { Request, Response } from 'express';
 import type core from 'file-type/core';
 
@@ -13,7 +13,7 @@ export const enigmaModificationIsAuthorized = async (req: Request, res: Response
 	if (checkEnigmaId) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.enigma_id || typeof req.body.enigma_id === 'string' && !isNumeric(req.body.enigma_id))
+		if (!req.body.enigma_id || !isNumeric(req.body.enigma_id))
 			return error(req, res, 'RE_002', { data: { key: 'enigma_id' } }).res;
 		if (!await EnigmaCreator.thisEnigmaIsCreatedByUser(Number(req.body.enigma_id), req.user.id))
 			return error(req, res, 'SE_003').res;
@@ -26,7 +26,7 @@ export const serieModificationIsAuthorized = async (req: Request, res: Response,
 	if (checkSerieId) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.series_id || typeof req.body.series_id === 'string' && !isNumeric(req.body.series_id))
+		if (!req.body.series_id || !isNumeric(req.body.series_id))
 			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
 		if (!await SeriesController.userRight(Number(req.body.series_id), req.user.id))
 			return error(req, res, 'SE_003').res;

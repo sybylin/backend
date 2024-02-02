@@ -18,7 +18,9 @@ const list: {
 		RE_004: 'Aucun fichier n\'est présent dans la requête',
 		RE_005: 'Aucun fichiers ne sont présent dans la requête',
 		RE_006: 'Le type de fichier n\'est pas autorisé',
-		RE_007: 'Request params is empty',
+		RE_007: 'Les paramètres de la requête sont vides',
+		RE_008: 'Les querys de la requête sont vides',
+		RE_009: 'La clé n\'est pas présente dans les querys',
 	},
 	jwt: {
 		JW_001: 'jwt est invalide',

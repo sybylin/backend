@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Router } from 'express';
-import isNumeric from 'validator/lib/isNumeric';
 import { error, returnFormat, success } from 'code/format';
 import { jwtMiddleware } from 'lib/jwt';
 import asyncHandler from 'lib/asyncHandler';
 import { checkAchievement } from '@/achievement';
 import { enigmaContent, enigmaLogo } from 'lib/upload';
 import { seriesIsPublished } from 'lib/series';
+import { isNumber, isString } from 'lib/isSomething';
 import SeriesController from 'database/series/controller';
 import SeriesEnigmaOrder from 'database/seriesEnigmaOrder/controller';
 import SeriesVerifiedBy from 'database/seriesVerifiedBy/controller';
@@ -34,15 +34,15 @@ const verifyRequest = (req: Request, res: Response, verify = '0000'): returnForm
 			continue;
 		switch (i) {
 		case 0:
-			if ((!req.body.id || !isNumeric(String(req.body.id))))
+			if ((!req.body.id || !isNumber(req.body.id)))
 				missingKeys.push('id');
 			break;
 		case 1:
-			if ((!req.body.series_id || !isNumeric(String(req.body.series_id))))
+			if ((!req.body.series_id || !isNumber(req.body.series_id)))
 				missingKeys.push('series_id');
 			break;
 		case 2:
-			if ((!req.body.user_id || !isNumeric(String(req.body.user_id))))
+			if ((!req.body.user_id || !isNumber(req.body.user_id)))
 				missingKeys.push('user_id');
 			break;
 		case 3:
@@ -67,15 +67,15 @@ class enigmaCRUD {
 	static async create(req: Request, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.series_id || typeof req.body.series_id !== 'number')
+		if (!req.body.series_id || !isNumber(req.body.series_id))
 			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
-		if (!req.body.order || typeof req.body.order !== 'number')
+		if (!req.body.order || !isNumber(req.body.order))
 			return error(req, res, 'RE_002', { data: { key: 'order' } }).res;
-		if (!req.body.title || typeof req.body.title !== 'string')
+		if (!req.body.title || !isString(req.body.title))
 			return error(req, res, 'RE_002', { data: { key: 'title' } }).res;
-		if (!req.body.description || typeof req.body.description !== 'string')
+		if (!req.body.description || !isString(req.body.description))
 			return error(req, res, 'RE_002', { data: { key: 'description' } }).res;
-		if (!await SeriesController.userRight(Number(req.body.series_id), req.user.id))
+		if (!await SeriesController.userRight(req.body.series_id, req.user.id))
 			return error(req, res, 'SE_003').res;
 
 		const enigma = await EnigmaController.create({
@@ -132,7 +132,7 @@ class enigmaCRUD {
 	static async delete(req: Request<any>, res: Response<any>, _next: NextFunction) {
 		if (!Object.keys(req.params).length)
 			return error(req, res, 'RE_007').res;
-		if (!req.params.id || !isNumeric(req.params.id))
+		if (!req.params.id || !isNumber(req.params.id))
 			return error(req, res, 'RE_003', { data: { key: 'id' } }).res;
 		const id = Number(req.params.id);
 		if (!await EnigmaController.thisEnigmaIsCreatedByUser(id, req.user.id))
@@ -242,17 +242,17 @@ class enigma extends enigmaCRUD {
 	static async updatePart(part: 'title' | 'description' | 'points', req: Request, res: Response, _next: NextFunction) {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.enigma_id || typeof req.body.enigma_id !== 'number')
+		if (!req.body.enigma_id || isNumber(req.body.enigma_id))
 			return error(req, res, 'RE_002', { data: { key: 'enigma_id' } }).res;
 		if (!req.body[part])
 			return error(req, res, 'RE_002', { data: { key: part } }).res;
-		if (part === 'points' && typeof req.body[part] !== 'number' || req.body[part] < 0 || req.body[part] > 5000)
+		if (part === 'points' && !isNumber(req.body[part]) || req.body[part] < 0 || req.body[part] > 5000)
 			return error(req, res, 'RE_002', { data: { key: part } }).res;
-		if (!await EnigmaCreatorController.thisEnigmaIsCreatedByUser(Number(req.body.enigma_id), req.user.id))
+		if (!await EnigmaCreatorController.thisEnigmaIsCreatedByUser(req.body.enigma_id, req.user.id))
 			return error(req, res, 'SE_003').res;
 		return success(req, res, 'SE_102', {
 			data: {
-				isUpdated: await EnigmaController.updatePart(Number(req.body.enigma_id), part, req.body[part])
+				isUpdated: await EnigmaController.updatePart(req.body.enigma_id, part, req.body[part])
 			}
 		}).res;
 	}
@@ -260,9 +260,9 @@ class enigma extends enigmaCRUD {
 	static async getPage(req: Request, res: Response, _next: NextFunction, devProdModerator: 'dev' | 'prod' | 'moderator') {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.enigma_id || typeof req.body.enigma_id !== 'number')
+		if (!req.body.enigma_id || !isNumber(req.body.enigma_id))
 			return error(req, res, 'RE_002', { data: { key: 'enigma_id' } }).res;
-		if (devProdModerator === 'prod' && (!req.body.series_id || typeof req.body.series_id !== 'number'))
+		if (devProdModerator === 'prod' && (!req.body.series_id || !isNumber(req.body.series_id)))
 			return error(req, res, 'RE_002', { data: { key: 'series_id' } }).res;
 		if (
 			devProdModerator === 'dev'
@@ -307,7 +307,7 @@ class enigma extends enigmaCRUD {
 	static async savePage(req: Request, res: Response, _next: NextFunction, devOrProd: 'dev' | 'prod') {
 		if (!Object.keys(req.body).length)
 			return error(req, res, 'RE_001').res;
-		if (!req.body.enigma_id || typeof req.body.enigma_id !== 'number')
+		if (!req.body.enigma_id || !isNumber(req.body.enigma_id))
 			return error(req, res, 'RE_002', { data: { key: 'enigma_id' } }).res;
 		if (!req.body.editor_data)
 			return error(req, res, 'RE_002', { data: { key: 'editor_data' } }).res;
@@ -351,10 +351,20 @@ export default Router()
 		next();
 	}))
 
-	.post('/update/image', seriesIsPublished, jwtMiddleware.acceptUser, enigmaLogo.middleware.single('image'), asyncHandler(enigmaLogo.check))
+	.post('/update/image',
+		seriesIsPublished,
+		jwtMiddleware.acceptUser,
+		enigmaLogo.middleware.single('image'),
+		asyncHandler(enigmaLogo.check)
+	)
 	.post('/update/:type', seriesIsPublished, jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.updatePart(req.params.type as 'title' | 'description', req, res, next)))
 
-	.get('/content/list', jwtMiddleware.acceptUser, asyncHandler(enigmaContent.listOfImage))
-	.post('/content/image', jwtMiddleware.acceptUser, enigmaContent.middleware.single('image'), asyncHandler(enigmaContent.check))
+	.get('/content', jwtMiddleware.acceptUser, asyncHandler(enigmaContent.listOfImage))
+	.post('/content',
+		jwtMiddleware.acceptUser,
+		enigmaContent.middleware.array('images'),
+		asyncHandler(enigmaContent.check)
+	)
+	.delete('/content', jwtMiddleware.acceptUser, asyncHandler(enigmaContent.delete))
 
 	.delete('/:id', jwtMiddleware.acceptUser, asyncHandler(enigma.delete));
