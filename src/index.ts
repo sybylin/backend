@@ -41,7 +41,10 @@ import type { Application, NextFunction, Request, Response } from 'express';
 		],
 		credentials: true,
 		methods: ['DELETE', 'HEAD', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT'],
-		origin: ['http://localhost:3000', 'http://localhost:9100']
+		origin: [
+			'https://sybyl.in', 'https://api.sybyl.in',
+			'http://localhost:3000', 'http://localhost:9100'
+		]
 	}));
 
 	app.use(compression());
