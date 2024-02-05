@@ -352,9 +352,9 @@ export default Router()
 	}))
 
 	.post('/update/image',
-		seriesIsPublished,
 		jwtMiddleware.acceptUser,
 		enigmaLogo.middleware.single('image'),
+		seriesIsPublished,
 		asyncHandler(enigmaLogo.check)
 	)
 	.post('/update/:type', seriesIsPublished, jwtMiddleware.acceptUser, asyncHandler((req, res, next) => enigma.updatePart(req.params.type as 'title' | 'description', req, res, next)))
