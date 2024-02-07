@@ -103,11 +103,63 @@ export default class controller {
 		return null;
 	}
 
-	static findOne(nameOrId: string | number): Promise<User | null> {
+	static findOne(nameOrId: string | number, profil = false): Promise<User | null> {
+		const selectSeries = {
+			select: {
+				title: true,
+				image: true,
+				description: true,
+				series_creator: {
+					select: {
+						user: {
+							select: {
+								name: true,
+								avatar: true
+							}
+						}
+					}
+				}
+			}
+		};
+
 		return user.findUnique({
 			where: (isNumber(nameOrId))
 				? { id: nameOrId as number }
 				: { name: nameOrId as string }
+			,
+			select: (!profil)
+				? undefined
+				: {
+					name: true,
+					avatar: true,
+					role: true,
+					verify: true,
+					user_achievement: {
+						select: {
+							unlocking_date: true,
+							achievement: {
+								select: {
+									name: true,
+									points: true,
+									creation_date: true
+								}
+							},
+						}
+					},
+					last_connection: true,
+					series_finished: {
+						select: {
+							completion_date: true,
+							series: selectSeries
+						}
+					},
+					series_started: {
+						select: {
+							started_date: true,
+							series: selectSeries
+						}
+					}
+				}
 		});
 	}
 

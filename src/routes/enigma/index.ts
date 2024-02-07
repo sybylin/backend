@@ -6,7 +6,7 @@ import asyncHandler from 'lib/asyncHandler';
 import { checkAchievement } from '@/achievement';
 import { enigmaContent, enigmaLogo } from 'lib/upload';
 import { seriesIsPublished } from 'lib/series';
-import { isNumber, isString } from 'lib/isSomething';
+import { isNumber, isNumeric, isString } from 'lib/isSomething';
 import SeriesController from 'database/series/controller';
 import SeriesEnigmaOrder from 'database/seriesEnigmaOrder/controller';
 import SeriesVerifiedBy from 'database/seriesVerifiedBy/controller';
@@ -132,7 +132,7 @@ class enigmaCRUD {
 	static async delete(req: Request<any>, res: Response<any>, _next: NextFunction) {
 		if (!Object.keys(req.params).length)
 			return error(req, res, 'RE_007').res;
-		if (!req.params.id || !isNumber(req.params.id))
+		if (!req.params.id || !isNumeric(req.params.id))
 			return error(req, res, 'RE_003', { data: { key: 'id' } }).res;
 		const id = Number(req.params.id);
 		if (!await EnigmaController.thisEnigmaIsCreatedByUser(id, req.user.id))

@@ -179,17 +179,14 @@ class accountCRUD {
 
 class account extends accountCRUD {
 	static async getUser(req: Request, res: Response, next: NextFunction) {
-		if (!req.params.name)
-			return error(req, res, 'RE_002', { data: { key: 'name' } }).res;
-		const user = await UserController.findOne(req.params.name);
+		if (!req.params.username)
+			return error(req, res, 'RE_002', { data: { key: 'username' } }).res;
+		const user = await UserController.findOne(req.params.username, true);
 		if (!user)
 			return error(req, res, 'US_001').res;
 		return success(req, res, 'US_107', {
 			data: {
-				user: {
-					name: user.name,
-					avatar: user.avatar,
-				}
+				user
 			}
 		}).res;
 	}
@@ -411,6 +408,7 @@ export default Router()
 	.get('/all', jwtMiddleware.acceptUser, asyncHandler(account.getAllHisInfo))
 	.get('/points', jwtMiddleware.acceptUser, asyncHandler(account.getPoints))
 	.get('/logout', jwtMiddleware.acceptUser, asyncHandler(account.logout))
+	.get('/:username', jwtMiddleware.acceptUser, asyncHandler(account.getUser))
 
 	.post('/block', jwtMiddleware.acceptAdministrator, asyncHandler(account.updateBlock))
 	.post('/create', captchaMiddleware, asyncHandler(account.create))

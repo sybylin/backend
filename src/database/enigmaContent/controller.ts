@@ -84,8 +84,9 @@ export default class controller {
 		const enigmaIndex = enigmasSeries?.series_enigma_order.findIndex((e) => e.enigma.id === enigma_id);
 		if (!enigmasSeries || enigmaIndex === undefined || enigmaIndex <= -1)
 			return { notExist: true };
+
 		if (!is_modo && enigmaIndex === 0)
-			await SeriesStartedController.create({ series_id, user_id });
+			SeriesStartedController.create({ series_id, user_id });
 		if (
 			is_modo ||
 			enigmasSeries.series_enigma_order[enigmaIndex].order === 1 ||
