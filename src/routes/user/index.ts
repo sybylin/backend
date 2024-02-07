@@ -70,7 +70,7 @@ class accountCRUD {
 		if (!account || typeof account === 'boolean')
 			return error(req, res, 'GE_003', { data: { accountCreationFailed: true } });
 		try {
-			await mailSystem.accountVerification(mail, { token: token.token.toString() });
+			await mailSystem.accountVerification(mail, { token: token.token.toString().split(/(\d\d)/).filter((e) => e.length).join(' ') });
 		} catch {
 			await UserController.delete(req.body.name);
 			return error(req, res, 'GE_002', { data: { mailSystemFailed: true } });
@@ -151,7 +151,7 @@ class accountCRUD {
 				: req.body.password as string ?? undefined
 		}, passwordChanged);
 		if (!mailNotChanged)
-			await mailSystem.accountVerification(req.body.email, { token: String(token.token) });
+			await mailSystem.accountVerification(req.body.email, { token: token.token.toString().split(/(\d\d)/).filter((e) => e.length).join(' ') });
 
 		return success(req, res, (!mailNotChanged)
 			? 'US_102'
@@ -276,7 +276,7 @@ class account extends accountCRUD {
 			user.token_deadline = token.deadline;
 			await UserController.update(user, false);
 
-			await mailSystem.accountVerification(user.email, { token: String(user.token) });
+			await mailSystem.accountVerification(user.email, { token: token.token.toString().split(/(\d\d)/).filter((e) => e.length).join(' ') });
 			return success(req, res, 'US_102', { data: { mailSend: true } }).res;
 		} else {
 			if (isEmpty(String(req.body.token)))
