@@ -194,7 +194,7 @@ export default class controller {
 					ret += 'AND ';
 			}
 			if (search)
-				ret += `SIMILARITY(public."Series".title, '${search}') > 0.4 OR SIMILARITY(public."User".name, '${search}') > 0.4`;
+				ret += `(SIMILARITY(public."Series".title, '${search}') > 0.4 OR SIMILARITY(public."User".name, '${search}') > 0.4)`;
 			return ret;
 		};
 		const genHaving = () => {
