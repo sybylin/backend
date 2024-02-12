@@ -10,6 +10,7 @@ import { JWT_COOKIE_NAME, milliseconds } from './jwtSendCookie';
 import { Role } from '@prisma/client';
 import type { Request, Response, NextFunction } from 'express';
 import type { token } from './jwtInterface';
+import type { CleanUser } from 'database/user/controller';
 
 const JWT_TOKEN = '6ddfb1eb8c1c6c9598b3df7dcb9859aa8f25a58905a80a445d663d83db5f54be568886b0948271dd462449d11d29fcc4fb35751afce8fd19faf925bf5f5131f8ad11f0921c704df90fa967e98356d5e4f763fdac7f01a978877ea55f5e2ad778b458e168190d74d1cc6ad909ccd8bf645d1fef8ef7836ee11f7bb5f520fd437842274c8d3b1d2ccd6f1489d9baa9576fca62b71a9ae8cc729cffb810f92a94290675fb8a8117ffcc3afa72ea5deac4c40efbf14d2e43ecde91460cf5dd1af091a25695eebbb9a787612799da1dbe35b774417f5d78760af8ddb9f32160a86db53f819f3fb5af2242d00040ce9a50765bafedb09cbfa90096016e2927243d992b';
 
@@ -101,9 +102,13 @@ export class jwtMiddleware {
 	static includeUserIfPass(req: Request, res: Response, next: NextFunction): void {
 		verifyJwt(req, res, true)
 			.then(() => {
+				if (!req.user)
+					req.user = { id: -1, name: 'john doe' } as CleanUser;
 				return next();
 			})
 			.catch(() => {
+				if (!req.user)
+					req.user = { id: -1, name: 'john doe' } as CleanUser;
 				return next();
 			});
 	}
